@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Device {
+  id        String @id @default(cuid())
+
+  deviceId  String @unique
+  location  String
+
+  lastSeen  DateTime?
+
+  logs      SensorLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model SensorLog {
+  id          String   @id @default(cuid())
+
+  temperature Float
+  humidity    Float
+
+  createdAt   DateTime @default(now())
+
+  deviceId    String
+  device      Device   @relation(fields: [deviceId], references: [deviceId])
+}
+
+model Alert {
+  id          String   @id @default(cuid())
+
+  deviceId    String
+  location    String
+
+  type        String
+  message     String
+  severity    String
+
+  createdAt   DateTime @default(now())
+  acknowledged Boolean @default(false)
+}
+
+model Settings {
+  id                           String   @id @default(cuid())
+
+  thresholdTempMin             Float    @default(15)
+  thresholdTempMax             Float    @default(35)
+  thresholdHumidityMin         Float    @default(30)
+  thresholdHumidityMax         Float    @default(70)
+
+  dataRetentionDays            Int      @default(90)
+  monitoringIntervalSeconds    Int      @default(5)
+
+  createdAt                    DateTime @default(now())
+  updatedAt                    DateTime @updatedAt
+}
