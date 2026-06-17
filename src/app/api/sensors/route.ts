@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 
-// Mencegah Next.js melakukan caching pada API route ini
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
@@ -10,26 +9,19 @@ export async function POST(req: Request) {
 
     const { deviceId, location, temperature, humidity } = body;
 
-    // ==========================
-    // VALIDASI & KONVERSI DATA
-    // ==========================
-
-    // Konversi ke number untuk memastikan perbandingan bekerja dengan benar
     const tempValue = Number(temperature);
     const humValue = Number(humidity);
 
-    // Validasi data
+    // ==========================
+    // VALIDATION
+    // ==========================
+
     if (!deviceId || isNaN(tempValue) || isNaN(humValue)) {
-      console.error("Invalid data received:", {
-        deviceId,
-        temperature,
-        humidity,
-      });
       return NextResponse.json(
         {
           success: false,
           error:
-            "Invalid data: deviceId, temperature, and humidity are required",
+            "Invalid data: deviceId, temperature and humidity are required",
         },
         {
           status: 400,
@@ -37,13 +29,16 @@ export async function POST(req: Request) {
       );
     }
 
-    // Logging untuk debugging
-    console.log("📡 Sensor data received:", {
+    console.log("📡 Sensor:", {
       deviceId,
       location,
       temperature: tempValue,
       humidity: humValue,
     });
+
+    // ==========================
+    // UPSERT DEVICE
+    // ==========================
 
     await prisma.device.upsert({
       where: {
@@ -60,6 +55,10 @@ export async function POST(req: Request) {
       },
     });
 
+    // ==========================
+    // SAVE SENSOR LOG
+    // ==========================
+
     await prisma.sensorLog.create({
       data: {
         deviceId,
@@ -72,45 +71,127 @@ export async function POST(req: Request) {
     // TEMPERATURE ALERT
     // ==========================
 
-    if (tempValue >= 35) {
-      console.log(`🚨 CRITICAL ALERT: Temperature ${tempValue}°C exceeds 35°C`);
-      await prisma.alert.create({
-        data: {
+    if (tempValue > 30) {
+      const existing = await prisma.alert.findFirst({
+        where: {
           deviceId,
-          location,
           type: "TEMPERATURE",
           severity: "CRITICAL",
-          message: `Temperature ${tempValue}°C exceeds critical threshold (35°C)`,
+          createdAt: {
+            gte: new Date(Date.now() - 1 * 60 * 1000),
+          },
         },
       });
-    } else if (tempValue >= 30) {
-      console.log(`⚠️ WARNING ALERT: Temperature ${tempValue}°C exceeds 30°C`);
-      await prisma.alert.create({
-        data: {
+
+      if (!existing) {
+        await prisma.alert.create({
+          data: {
+            deviceId,
+            location,
+            type: "TEMPERATURE",
+            severity: "CRITICAL",
+            message: `Temperature ${tempValue}°C exceeds critical threshold (>30°C)`,
+          },
+        });
+      }
+    } else if (tempValue >= 28) {
+      const existing = await prisma.alert.findFirst({
+        where: {
           deviceId,
-          location,
           type: "TEMPERATURE",
           severity: "WARNING",
-          message: `Temperature ${tempValue}°C exceeds warning threshold (30°C)`,
+          createdAt: {
+            gte: new Date(Date.now() - 1 * 60 * 1000),
+          },
         },
       });
+
+      if (!existing) {
+        await prisma.alert.create({
+          data: {
+            deviceId,
+            location,
+            type: "TEMPERATURE",
+            severity: "WARNING",
+            message: `Temperature ${tempValue}°C exceeds warning threshold (28-30°C)`,
+          },
+        });
+      }
     }
 
     // ==========================
     // HUMIDITY ALERT
     // ==========================
 
-    if (humValue >= 60) {
-      console.log(`⚠️ WARNING ALERT: Humidity ${humValue}% exceeds 60%`);
-      await prisma.alert.create({
-        data: {
+    if (humValue > 70) {
+      const existing = await prisma.alert.findFirst({
+        where: {
           deviceId,
-          location,
           type: "HUMIDITY",
-          severity: "WARNING",
-          message: `Humidity ${humValue}% exceeds threshold (60%)`,
+          severity: "CRITICAL",
+          createdAt: {
+            gte: new Date(Date.now() - 1 * 60 * 1000),
+          },
         },
       });
+
+      if (!existing) {
+        await prisma.alert.create({
+          data: {
+            deviceId,
+            location,
+            type: "HUMIDITY",
+            severity: "CRITICAL",
+            message: `Humidity ${humValue}% exceeds critical threshold (>70%)`,
+          },
+        });
+      }
+    } else if (humValue > 60) {
+      const existing = await prisma.alert.findFirst({
+        where: {
+          deviceId,
+          type: "HUMIDITY",
+          severity: "WARNING",
+          createdAt: {
+            gte: new Date(Date.now() - 1 * 60 * 1000),
+          },
+        },
+      });
+
+      if (!existing) {
+        await prisma.alert.create({
+          data: {
+            deviceId,
+            location,
+            type: "HUMIDITY",
+            severity: "WARNING",
+            message: `Humidity ${humValue}% exceeds warning threshold (61-70%)`,
+          },
+        });
+      }
+    } else if (humValue < 30) {
+      const existing = await prisma.alert.findFirst({
+        where: {
+          deviceId,
+          type: "HUMIDITY",
+          severity: "WARNING",
+          createdAt: {
+            gte: new Date(Date.now() - 1 * 60 * 1000),
+          },
+        },
+      });
+
+      if (!existing) {
+        await prisma.alert.create({
+          data: {
+            deviceId,
+            location,
+            type: "HUMIDITY",
+            severity: "WARNING",
+            message: `Humidity ${humValue}% below threshold (<30%)`,
+          },
+        });
+      }
     }
 
     return NextResponse.json({
