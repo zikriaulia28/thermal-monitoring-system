@@ -1,13 +1,14 @@
-import { Device } from "@/types/device";
+export interface DashboardOverview {
+  online: number;
+  offline: number;
+  avgTemperature: number;
+  avgHumidity: number;
+}
 
-export async function getChartData(): Promise<Device[]> {
-  const response = await fetch("/api/dashboard/chart", {
-    cache: "no-store",
-  });
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch dashboard data");
-  }
-
-  return response.json();
+export interface DashboardStats {
+  totalDevices: number;
+  activeDevices: number;
+  criticalAlerts: number;
+  avgTemperature: number;
+  avgHumidity: number;
 }

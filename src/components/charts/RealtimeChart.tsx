@@ -11,12 +11,15 @@ import DeviceDetailChart from "./DeviceDetailChart";
 
 import { Device } from "@/types/device";
 import { buildComparisonData, getDeviceByLocation } from "@/lib/chartUtils";
+import { TimeRange, TIME_RANGE_OPTIONS } from "@/types/filter";
 
 interface RealtimeChartProps {
   devices: Device[];
+  isLoading?: boolean;
+  timeRange?: TimeRange;
 }
 
-export default function RealtimeChart({ devices }: RealtimeChartProps) {
+export default function RealtimeChart({ devices, isLoading = false, timeRange = "realtime" }: RealtimeChartProps) {
   const [activeTab, setActiveTab] = useState("comparison-temp");
 
   const pdbDevice = getDeviceByLocation(devices, "PDB");
@@ -30,6 +33,8 @@ export default function RealtimeChart({ devices }: RealtimeChartProps) {
 
   const currentSingleDevice = devices.find((device) => device.id === activeTab);
   const singleDeviceData = currentSingleDevice?.readings ?? [];
+
+  const timeRangeLabel = TIME_RANGE_OPTIONS.find((opt) => opt.value === timeRange)?.description || "Last 60 minutes";
 
   const getContextInfo = () => {
     if (activeTab === "comparison-temp") {
@@ -79,7 +84,7 @@ export default function RealtimeChart({ devices }: RealtimeChartProps) {
               <span className="truncate">Telemetry Analytics</span>
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Realtime monitoring · Last 60 minutes
+              Realtime monitoring · {timeRangeLabel}
             </p>
           </div>
 
@@ -161,30 +166,41 @@ export default function RealtimeChart({ devices }: RealtimeChartProps) {
 
         {/* Chart Container */}
         <div className="w-full h-[280px] sm:h-[320px] md:h-[380px] lg:h-[420px] rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-2 sm:p-3 shadow-inner relative" style={{ minWidth: 0, minHeight: 0 }}>
-          {activeTab === "comparison-temp" && (
-            <ComparisonTemperatureChart data={comparisonData} />
-          )}
-          {activeTab === "comparison-hum" && (
-            <ComparisonHumidityChart data={comparisonData} />
-          )}
-          {!activeTab.startsWith("comparison") &&
-            singleDeviceData.length > 0 && (
-              <DeviceDetailChart data={singleDeviceData} />
-            )}
+          {isLoading ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg sm:rounded-xl p-4">
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mb-3" />
+              <p className="text-xs sm:text-sm font-semibold text-center">
+                Loading chart data...
+              </p>
+            </div>
+          ) : (
+            <>
+              {activeTab === "comparison-temp" && (
+                <ComparisonTemperatureChart data={comparisonData} />
+              )}
+              {activeTab === "comparison-hum" && (
+                <ComparisonHumidityChart data={comparisonData} />
+              )}
+              {!activeTab.startsWith("comparison") &&
+                singleDeviceData.length > 0 && (
+                  <DeviceDetailChart data={singleDeviceData} />
+                )}
 
-          {/* Empty State */}
-          {!activeTab.startsWith("comparison") &&
-            singleDeviceData.length === 0 && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg sm:rounded-xl p-4">
-                <Activity className="w-8 h-8 sm:w-10 sm:h-10 mb-2 sm:mb-3 opacity-40" />
-                <p className="text-xs sm:text-sm font-semibold text-center">
-                  No telemetry data available
-                </p>
-                <p className="text-[10px] sm:text-xs mt-1 text-center">
-                  Device might be offline or not reporting yet
-                </p>
-              </div>
-            )}
+              {/* Empty State */}
+              {!activeTab.startsWith("comparison") &&
+                singleDeviceData.length === 0 && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg sm:rounded-xl p-4">
+                    <Activity className="w-8 h-8 sm:w-10 sm:h-10 mb-2 sm:mb-3 opacity-40" />
+                    <p className="text-xs sm:text-sm font-semibold text-center">
+                      No telemetry data available
+                    </p>
+                    <p className="text-[10px] sm:text-xs mt-1 text-center">
+                      Device might be offline or not reporting yet
+                    </p>
+                  </div>
+                )}
+            </>
+          )}
         </div>
       </div>
     </div>
