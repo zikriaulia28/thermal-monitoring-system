@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { useSystemStatus } from "@/hooks/useSystemStatus";
 
 import {
   LayoutDashboard,
@@ -14,8 +15,8 @@ import {
   X,
   ChevronRight,
   Zap,
-  User,
-  LogOut,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 
 interface Props {
@@ -23,7 +24,6 @@ interface Props {
   onClose: () => void;
 }
 
-// Group menu untuk organisasi yang lebih baik
 const menuGroups = [
   {
     label: "MAIN",
@@ -36,7 +36,7 @@ const menuGroups = [
   {
     label: "MANAGEMENT",
     items: [
-      { name: "Alerts", href: "/dashboard/alerts", icon: Bell, badge: 3 }, // Badge dinamis bisa dari API
+      { name: "Alerts", href: "/dashboard/alerts", icon: Bell, showBadge: true },
       { name: "Reports", href: "/dashboard/reports", icon: FileText },
     ],
   },
@@ -49,6 +49,7 @@ const menuGroups = [
 export default function Sidebar({ open, onClose }: Props) {
   const pathname = usePathname();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const { status } = useSystemStatus();
 
   return (
     <>
@@ -56,7 +57,7 @@ export default function Sidebar({ open, onClose }: Props) {
       {open && (
         <div
           onClick={onClose}
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden animate-in fade-in duration-200"
           aria-hidden="true"
         />
       )}
@@ -102,7 +103,7 @@ export default function Sidebar({ open, onClose }: Props) {
           {/* Close Button - Mobile Only */}
           <button
             onClick={onClose}
-            className="lg:hidden p-1.5 rounded-md hover:bg-slate-800 transition-colors"
+            className="lg:hidden p-1.5 rounded-md hover:bg-slate-800 transition-colors active:scale-95"
             aria-label="Close sidebar"
           >
             <X size={18} className="text-slate-400" />
@@ -126,6 +127,7 @@ export default function Sidebar({ open, onClose }: Props) {
                   const Icon = menu.icon;
                   const active = pathname === menu.href;
                   const isHovered = hoveredItem === menu.href;
+                  const badgeCount = menu.showBadge ? status.unacknowledgedAlerts : 0;
 
                   return (
                     <li key={menu.href}>
@@ -140,6 +142,7 @@ export default function Sidebar({ open, onClose }: Props) {
                           text-sm font-medium
                           transition-all duration-200
                           outline-none focus-visible:ring-2 focus-visible:ring-blue-500
+                          active:scale-95
                           
                           ${
                             active
@@ -167,13 +170,14 @@ export default function Sidebar({ open, onClose }: Props) {
                         <span className="flex-1">{menu.name}</span>
 
                         {/* Badge untuk Alerts */}
-                        {menu.badge && menu.badge > 0 && (
+                        {menu.showBadge && badgeCount > 0 && (
                           <span
                             className={`
                               inline-flex items-center justify-center
                               min-w-[20px] h-5 px-1.5
                               text-[10px] font-bold rounded-full
-                              transition-colors duration-200
+                              transition-all duration-200
+                              animate-pulse
                               ${
                                 active
                                   ? "bg-blue-500 text-white"
@@ -181,7 +185,7 @@ export default function Sidebar({ open, onClose }: Props) {
                               }
                             `}
                           >
-                            {menu.badge}
+                            {badgeCount > 9 ? "9+" : badgeCount}
                           </span>
                         )}
 
@@ -202,19 +206,56 @@ export default function Sidebar({ open, onClose }: Props) {
         </nav>
 
         {/* System Status */}
-        <div className="px-4 pb-4">
+        <div className="px-4 pb-4 space-y-3">
+          {/* Device Status */}
           <div className="rounded-lg bg-slate-900/50 border border-slate-800 p-3">
-            <div className="flex items-center gap-2 mb-2">
-              <div className="relative">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                <div className="absolute inset-0 w-2 h-2 rounded-full bg-green-500 animate-ping opacity-75" />
-              </div>
+            <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-medium text-slate-300">
-                System Online
+                Device Status
+              </span>
+              {status.onlineDevices > 0 ? (
+                <Wifi size={14} className="text-green-500" />
+              ) : (
+                <WifiOff size={14} className="text-red-500" />
+              )}
+            </div>
+            
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <div className="relative">
+                  <div className="w-2 h-2 rounded-full bg-green-500" />
+                  {status.onlineDevices > 0 && (
+                    <div className="absolute inset-0 w-2 h-2 rounded-full bg-green-500 animate-ping opacity-75" />
+                  )}
+                </div>
+                <span className="text-slate-400">Online</span>
+              </div>
+              <span className="font-bold text-slate-200">
+                {status.onlineDevices}
               </span>
             </div>
-            <div className="text-[10px] text-slate-500">
-              Last sync: Just now
+
+            <div className="flex items-center justify-between text-xs mt-1.5">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-red-500" />
+                <span className="text-slate-400">Offline</span>
+              </div>
+              <span className="font-bold text-slate-200">
+                {status.offlineDevices}
+              </span>
+            </div>
+
+            <div className="mt-2 pt-2 border-t border-slate-800">
+              <div className="text-[10px] text-slate-500">
+                Total: {status.totalDevices} device{status.totalDevices !== 1 ? "s" : ""}
+              </div>
+            </div>
+          </div>
+
+          {/* Last Sync */}
+          <div className="text-center">
+            <div className="text-[10px] text-slate-600">
+              Auto-refresh every 30s
             </div>
           </div>
         </div>

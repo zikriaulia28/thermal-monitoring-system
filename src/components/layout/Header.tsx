@@ -1,14 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-import { Menu, ChevronRight, Calendar, Clock } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { Menu, ChevronRight, Calendar, Clock, Bell, RefreshCw, Wifi, WifiOff } from "lucide-react";
+import { useSystemStatus } from "@/hooks/useSystemStatus";
 
 interface Props {
   onMenu?: () => void;
 }
 
-// Mapping untuk breadcrumb berdasarkan pathname
 const pageTitles: Record<string, { title: string; subtitle: string }> = {
   "/dashboard": {
     title: "Dashboard",
@@ -38,10 +38,11 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
 
 export default function Header({ onMenu }: Props) {
   const pathname = usePathname();
+  const router = useRouter();
   const [time, setTime] = useState("");
-  const [isDark, setIsDark] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const { status } = useSystemStatus();
 
-  // Update waktu setiap detik
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
@@ -65,30 +66,37 @@ export default function Header({ onMenu }: Props) {
     return () => clearInterval(interval);
   }, []);
 
-  // Dapatkan judul halaman saat ini
   const currentPage = pageTitles[pathname] || {
     title: "Dashboard",
     subtitle: "Overview sistem monitoring real-time",
   };
 
+  const handleRefresh = () => {
+    setIsRefreshing(true);
+    router.refresh();
+    setTimeout(() => setIsRefreshing(false), 1000);
+  };
+
   return (
     <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-lg border-b border-slate-200 dark:bg-slate-900/80 dark:border-slate-800">
-      <div className="flex items-center justify-between px-4 py-3 md:px-6 lg:px-8">
+      <div className="flex items-center justify-between gap-3 px-4 py-3 md:px-6 lg:px-8">
         {/* Left Section: Menu + Page Info */}
-        <div className="flex items-center gap-4 flex-1 min-w-0">
+        <div className="flex items-center gap-3 flex-1 min-w-0">
           {/* Mobile Menu Toggle */}
           <button
             onClick={onMenu}
-            className="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="lg:hidden p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors active:scale-95"
             aria-label="Toggle menu"
           >
             <Menu size={20} className="text-slate-600 dark:text-slate-400" />
           </button>
 
-          {/* Page Title & Subtitle */}
+          {/* Page Title & Breadcrumb */}
           <div className="flex-1 min-w-0">
+            {/* Breadcrumb */}
             <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-0.5">
-              <span>Dashboard</span>
+              <span className="hidden sm:inline">Dashboard</span>
+              <span className="sm:hidden">•••</span>
               {pathname !== "/dashboard" && (
                 <>
                   <ChevronRight size={12} />
@@ -98,23 +106,41 @@ export default function Header({ onMenu }: Props) {
                 </>
               )}
             </div>
-            <h1 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white truncate">
+            
+            {/* Title */}
+            <h1 className="text-base md:text-lg lg:text-xl font-bold text-slate-900 dark:text-white truncate">
               {currentPage.title}
             </h1>
-            <p className="hidden sm:block text-xs text-slate-500 dark:text-slate-400 truncate">
+            
+            {/* Subtitle - Hidden on mobile */}
+            <p className="hidden md:block text-xs text-slate-500 dark:text-slate-400 truncate mt-0.5">
               {currentPage.subtitle}
             </p>
           </div>
         </div>
 
         {/* Right Section: Actions */}
-        <div className="flex items-center gap-2 md:gap-3">
-          {/* Time Display */}
+        <div className="flex items-center gap-2">
+          {/* System Status - Tablet & Desktop */}
+          <div className="hidden md:flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
+            {status.onlineDevices > 0 ? (
+              <Wifi size={14} className="text-green-500" />
+            ) : (
+              <WifiOff size={14} className="text-red-500" />
+            )}
+            <div className="text-xs">
+              <div className="font-semibold text-slate-700 dark:text-slate-300">
+                {status.onlineDevices}/{status.totalDevices}
+              </div>
+              <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                Devices
+              </div>
+            </div>
+          </div>
+
+          {/* Time Display - Desktop Only */}
           <div className="hidden lg:flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700">
-            <Calendar
-              size={14}
-              className="text-slate-500 dark:text-slate-400"
-            />
+            <Calendar size={14} className="text-slate-500 dark:text-slate-400" />
             <div className="text-xs">
               <div className="font-medium text-slate-700 dark:text-slate-300">
                 {time.split(" • ")[0]}
@@ -125,6 +151,35 @@ export default function Header({ onMenu }: Props) {
               </div>
             </div>
           </div>
+
+          {/* Refresh Button */}
+          <button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50"
+            aria-label="Refresh data"
+            title="Refresh"
+          >
+            <RefreshCw
+              size={18}
+              className={`text-slate-600 dark:text-slate-400 ${isRefreshing ? "animate-spin" : ""}`}
+            />
+          </button>
+
+          {/* Notification Bell */}
+          <button
+            onClick={() => router.push("/dashboard/alerts")}
+            className="relative p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all active:scale-95"
+            aria-label="View alerts"
+            title="Alerts"
+          >
+            <Bell size={18} className="text-slate-600 dark:text-slate-400" />
+            {status.unacknowledgedAlerts > 0 && (
+              <span className="absolute -top-1 -right-1 flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full animate-pulse">
+                {status.unacknowledgedAlerts > 9 ? "9+" : status.unacknowledgedAlerts}
+              </span>
+            )}
+          </button>
         </div>
       </div>
     </header>
