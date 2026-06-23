@@ -9,6 +9,8 @@ import {
   Legend,
   XAxis,
   YAxis,
+  ReferenceLine,
+  ReferenceArea,
 } from "recharts";
 
 interface Props {
@@ -32,8 +34,26 @@ export default function ComparisonHumidityChart({ data }: Props) {
   return (
     <div className="w-full h-full" style={{ minWidth: 0, minHeight: 0 }}>
       <ResponsiveContainer width="100%" height="100%">
-      <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+      <LineChart data={data} margin={{ top: 10, right: 15, left: 0, bottom: 5 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" className="dark:opacity-20" />
+
+        <ReferenceArea y1={70} y2={100} fill="#fef2f2" fillOpacity={0.5} />
+        <ReferenceArea y1={-10} y2={30} fill="#fef2f2" fillOpacity={0.3} />
+
+        <ReferenceLine
+          y={70}
+          stroke="#dc2626"
+          strokeDasharray="6 3"
+          strokeWidth={2}
+          label={{ value: "CRITICAL 70%", position: "insideTopRight", fill: "#dc2626", fontSize: 10, fontWeight: "bold" }}
+        />
+        <ReferenceLine
+          y={30}
+          stroke="#dc2626"
+          strokeDasharray="6 3"
+          strokeWidth={2}
+          label={{ value: "CRITICAL 30%", position: "insideBottomRight", fill: "#dc2626", fontSize: 10, fontWeight: "bold" }}
+        />
 
         <XAxis
           dataKey="time"
@@ -44,7 +64,7 @@ export default function ComparisonHumidityChart({ data }: Props) {
 
         <YAxis
           unit="%"
-          domain={[40, 95]}
+          domain={[0, 100]}
           tick={{ fontSize: 10, fill: "#64748b" }}
           tickLine={false}
           width={35}
@@ -56,45 +76,48 @@ export default function ComparisonHumidityChart({ data }: Props) {
             border: "1px solid #e2e8f0",
             borderRadius: "8px",
             fontSize: "12px",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
           }}
-          formatter={(value) => [`${value} %`]}
+          formatter={(value: any, name: any) => [`${Number(value).toFixed(2)} %`, name]}
         />
 
         <Legend
-          wrapperStyle={{
-            fontSize: 11,
-            paddingTop: "10px",
-          }}
+          wrapperStyle={{ fontSize: 11, paddingTop: "10px" }}
+          iconType="circle"
+          iconSize={8}
         />
 
         <Line
           type="natural"
           dataKey="Hum PDB"
-          name="PDB Humidity"
-          stroke="#3b82f6"
-          strokeWidth={2}
+          name="PDB"
+          stroke="#7c3aed"
+          strokeWidth={2.5}
           dot={false}
           activeDot={{ r: 4 }}
+          connectNulls={true}
         />
 
         <Line
           type="natural"
           dataKey="Hum UPS"
-          name="UPS Humidity"
-          stroke="#06b6d4"
-          strokeWidth={2}
+          name="UPS"
+          stroke="#0d9488"
+          strokeWidth={2.5}
           dot={false}
           activeDot={{ r: 4 }}
+          connectNulls={true}
         />
 
         <Line
           type="natural"
           dataKey="Hum Baterai"
-          name="Baterai Humidity"
-          stroke="#059669"
-          strokeWidth={2}
+          name="BATTERY"
+          stroke="#16a34a"
+          strokeWidth={2.5}
           dot={false}
           activeDot={{ r: 4 }}
+          connectNulls={true}
         />
       </LineChart>
     </ResponsiveContainer>
