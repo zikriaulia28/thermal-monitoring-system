@@ -16,6 +16,7 @@ import {
 
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Thermometer, Droplets, AlertCircle } from "lucide-react";
+import { useThresholds } from "@/hooks/useThresholds";
 
 interface Props {
   temperatureData: any[];
@@ -41,6 +42,7 @@ export default function EnhancedMonitoringChart({
   isLoading,
 }: Props) {
   const [activeTab, setActiveTab] = useState<"temperature" | "humidity">("temperature");
+  const { tempMin, tempMax, tempWarning, humMin, humMax } = useThresholds();
 
   const isTemperature = activeTab === "temperature";
   const chartData = isTemperature ? temperatureData : humidityData;
@@ -121,20 +123,20 @@ export default function EnhancedMonitoringChart({
               {isTemperature && (
                 <>
                   <ReferenceArea
-                    y1={35}
-                    y2={100}
+                    y1={tempMax + 5}
+                    y2={tempMax + 20}
                     fill="#fef2f2"
                     fillOpacity={0.6}
                   />
                   <ReferenceArea
-                    y1={30}
-                    y2={35}
+                    y1={tempWarning}
+                    y2={tempMax}
                     fill="#fff7ed"
                     fillOpacity={0.4}
                   />
                   <ReferenceArea
                     y1={-10}
-                    y2={15}
+                    y2={tempMin}
                     fill="#eff6ff"
                     fillOpacity={0.4}
                   />
@@ -145,14 +147,14 @@ export default function EnhancedMonitoringChart({
               {!isTemperature && (
                 <>
                   <ReferenceArea
-                    y1={70}
+                    y1={humMax}
                     y2={100}
                     fill="#fef2f2"
                     fillOpacity={0.6}
                   />
                   <ReferenceArea
                     y1={-10}
-                    y2={30}
+                    y2={humMin}
                     fill="#fef2f2"
                     fillOpacity={0.4}
                   />
@@ -178,7 +180,7 @@ export default function EnhancedMonitoringChart({
                 tickLine={false}
                 axisLine={false}
                 width={40}
-                domain={isTemperature ? [10, 45] : [0, 100]}
+                domain={isTemperature ? [tempMin - 5, tempMax + 10] : [0, 100]}
               />
 
               <Tooltip
@@ -215,12 +217,12 @@ export default function EnhancedMonitoringChart({
               {isTemperature && (
                 <>
                   <ReferenceLine
-                    y={35}
+                    y={tempMax + 5}
                     stroke="#dc2626"
                     strokeDasharray="6 3"
                     strokeWidth={2}
                     label={{
-                      value: "CRITICAL 35°C",
+                      value: `CRITICAL ${tempMax + 5}°C`,
                       position: "insideTopRight",
                       fill: "#dc2626",
                       fontSize: 10,
@@ -228,12 +230,12 @@ export default function EnhancedMonitoringChart({
                     }}
                   />
                   <ReferenceLine
-                    y={30}
+                    y={tempWarning}
                     stroke="#f59e0b"
                     strokeDasharray="4 4"
                     strokeWidth={2}
                     label={{
-                      value: "WARNING 30°C",
+                      value: `WARNING ${tempWarning}°C`,
                       position: "insideTopRight",
                       fill: "#f59e0b",
                       fontSize: 10,
@@ -241,12 +243,12 @@ export default function EnhancedMonitoringChart({
                     }}
                   />
                   <ReferenceLine
-                    y={15}
+                    y={tempMin}
                     stroke="#3b82f6"
                     strokeDasharray="4 4"
                     strokeWidth={2}
                     label={{
-                      value: "LOW 15°C",
+                      value: `LOW ${tempMin}°C`,
                       position: "insideBottomRight",
                       fill: "#3b82f6",
                       fontSize: 10,
@@ -260,12 +262,12 @@ export default function EnhancedMonitoringChart({
               {!isTemperature && (
                 <>
                   <ReferenceLine
-                    y={70}
+                    y={humMax}
                     stroke="#dc2626"
                     strokeDasharray="6 3"
                     strokeWidth={2}
                     label={{
-                      value: "CRITICAL 70%",
+                      value: `CRITICAL ${humMax}%`,
                       position: "insideTopRight",
                       fill: "#dc2626",
                       fontSize: 10,
@@ -273,12 +275,12 @@ export default function EnhancedMonitoringChart({
                     }}
                   />
                   <ReferenceLine
-                    y={30}
+                    y={humMin}
                     stroke="#dc2626"
                     strokeDasharray="6 3"
                     strokeWidth={2}
                     label={{
-                      value: "CRITICAL 30%",
+                      value: `CRITICAL ${humMin}%`,
                       position: "insideBottomRight",
                       fill: "#dc2626",
                       fontSize: 10,
@@ -312,28 +314,28 @@ export default function EnhancedMonitoringChart({
           <>
             <span className="flex items-center gap-1.5 text-xs font-medium">
               <span className="w-3 h-3 rounded-sm bg-red-100 border border-red-300" />
-              <span className="text-red-700">Critical &gt;35°C</span>
+              <span className="text-red-700">Critical &gt;{tempMax}°C</span>
             </span>
             <span className="flex items-center gap-1.5 text-xs font-medium">
               <span className="w-3 h-3 rounded-sm bg-amber-50 border border-amber-300" />
-              <span className="text-amber-700">Warning 30-35°C</span>
+              <span className="text-amber-700">Warning {tempWarning}-{tempMax}°C</span>
             </span>
             <span className="flex items-center gap-1.5 text-xs font-medium">
               <span className="w-3 h-3 rounded-sm bg-blue-50 border border-blue-300" />
-              <span className="text-blue-700">Low &lt;15°C</span>
+              <span className="text-blue-700">Low &lt;{tempMin}°C</span>
             </span>
             <span className="flex items-center gap-1.5 text-xs text-slate-500 font-medium ml-auto">
-              Normal: 15-30°C
+              Normal: {tempMin}-{tempWarning}°C
             </span>
           </>
         ) : (
           <>
             <span className="flex items-center gap-1.5 text-xs font-medium">
               <span className="w-3 h-3 rounded-sm bg-red-100 border border-red-300" />
-              <span className="text-red-700">Critical &gt;70% or &lt;30%</span>
+              <span className="text-red-700">Critical &gt;{humMax}% or &lt;{humMin}%</span>
             </span>
             <span className="flex items-center gap-1.5 text-xs text-slate-500 font-medium ml-auto">
-              Normal: 30-70%
+              Normal: {humMin}-{humMax}%
             </span>
           </>
         )}

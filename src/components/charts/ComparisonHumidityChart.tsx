@@ -12,6 +12,7 @@ import {
   ReferenceLine,
   ReferenceArea,
 } from "recharts";
+import { useThresholds } from "@/hooks/useThresholds";
 
 interface Props {
   data: {
@@ -23,6 +24,8 @@ interface Props {
 }
 
 export default function ComparisonHumidityChart({ data }: Props) {
+  const { humMin, humMax } = useThresholds();
+
   if (!data || data.length === 0) {
     return (
       <div className="w-full h-full flex items-center justify-center text-slate-400">
@@ -37,38 +40,26 @@ export default function ComparisonHumidityChart({ data }: Props) {
       <LineChart data={data} margin={{ top: 10, right: 15, left: 0, bottom: 5 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" className="dark:opacity-20" />
 
-        <ReferenceArea y1={70} y2={100} fill="#fef2f2" fillOpacity={0.5} />
-        <ReferenceArea y1={-10} y2={30} fill="#fef2f2" fillOpacity={0.3} />
+        <ReferenceArea y1={humMax} y2={100} fill="#fef2f2" fillOpacity={0.5} />
+        <ReferenceArea y1={-10} y2={humMin} fill="#fef2f2" fillOpacity={0.3} />
 
         <ReferenceLine
-          y={70}
+          y={humMax}
           stroke="#dc2626"
           strokeDasharray="6 3"
           strokeWidth={2}
-          label={{ value: "CRITICAL 70%", position: "insideTopRight", fill: "#dc2626", fontSize: 10, fontWeight: "bold" }}
+          label={{ value: `CRITICAL ${humMax}%`, position: "insideTopRight", fill: "#dc2626", fontSize: 10, fontWeight: "bold" }}
         />
         <ReferenceLine
-          y={30}
+          y={humMin}
           stroke="#dc2626"
           strokeDasharray="6 3"
           strokeWidth={2}
-          label={{ value: "CRITICAL 30%", position: "insideBottomRight", fill: "#dc2626", fontSize: 10, fontWeight: "bold" }}
+          label={{ value: `CRITICAL ${humMin}%`, position: "insideBottomRight", fill: "#dc2626", fontSize: 10, fontWeight: "bold" }}
         />
 
-        <XAxis
-          dataKey="time"
-          minTickGap={15}
-          tick={{ fontSize: 10, fill: "#64748b" }}
-          tickLine={false}
-        />
-
-        <YAxis
-          unit="%"
-          domain={[0, 100]}
-          tick={{ fontSize: 10, fill: "#64748b" }}
-          tickLine={false}
-          width={35}
-        />
+        <XAxis dataKey="time" minTickGap={15} tick={{ fontSize: 10, fill: "#64748b" }} tickLine={false} />
+        <YAxis unit="%" domain={[0, 100]} tick={{ fontSize: 10, fill: "#64748b" }} tickLine={false} width={35} />
 
         <Tooltip
           contentStyle={{
@@ -81,44 +72,11 @@ export default function ComparisonHumidityChart({ data }: Props) {
           formatter={(value: any, name: any) => [`${Number(value).toFixed(2)} %`, name]}
         />
 
-        <Legend
-          wrapperStyle={{ fontSize: 11, paddingTop: "10px" }}
-          iconType="circle"
-          iconSize={8}
-        />
+        <Legend wrapperStyle={{ fontSize: 11, paddingTop: "10px" }} iconType="circle" iconSize={8} />
 
-        <Line
-          type="natural"
-          dataKey="Hum PDB"
-          name="PDB"
-          stroke="#7c3aed"
-          strokeWidth={2.5}
-          dot={false}
-          activeDot={{ r: 4 }}
-          connectNulls={true}
-        />
-
-        <Line
-          type="natural"
-          dataKey="Hum UPS"
-          name="UPS"
-          stroke="#0d9488"
-          strokeWidth={2.5}
-          dot={false}
-          activeDot={{ r: 4 }}
-          connectNulls={true}
-        />
-
-        <Line
-          type="natural"
-          dataKey="Hum Baterai"
-          name="BATTERY"
-          stroke="#16a34a"
-          strokeWidth={2.5}
-          dot={false}
-          activeDot={{ r: 4 }}
-          connectNulls={true}
-        />
+        <Line type="natural" dataKey="Hum PDB" name="PDB" stroke="#7c3aed" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} connectNulls={true} />
+        <Line type="natural" dataKey="Hum UPS" name="UPS" stroke="#0d9488" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} connectNulls={true} />
+        <Line type="natural" dataKey="Hum Baterai" name="BATTERY" stroke="#16a34a" strokeWidth={2.5} dot={false} activeDot={{ r: 4 }} connectNulls={true} />
       </LineChart>
     </ResponsiveContainer>
     </div>
