@@ -42,8 +42,12 @@ export default function Header({ onMenu }: Props) {
   const router = useRouter();
   const [time, setTime] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { status } = useSystemStatus();
-  const isAdmin = checkAdminAccess();
+
+  useEffect(() => {
+    setIsAdmin(checkAdminAccess());
+  }, []);
 
   useEffect(() => {
     const updateTime = () => {
