@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, ChevronRight, Calendar, Clock, Bell, RefreshCw, Wifi, WifiOff } from "lucide-react";
+import { Menu, ChevronRight, Calendar, Clock, Bell, RefreshCw, Wifi, WifiOff, Shield, ShieldOff } from "lucide-react";
 import { useSystemStatus } from "@/hooks/useSystemStatus";
+import { checkAdminAccess } from "@/lib/adminAccess";
 
 interface Props {
   onMenu?: () => void;
@@ -42,6 +43,7 @@ export default function Header({ onMenu }: Props) {
   const [time, setTime] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { status } = useSystemStatus();
+  const isAdmin = checkAdminAccess();
 
   useEffect(() => {
     const updateTime = () => {
@@ -151,6 +153,16 @@ export default function Header({ onMenu }: Props) {
               </div>
             </div>
           </div>
+
+          {/* Admin Badge */}
+          {isAdmin && (
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <Shield className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 uppercase tracking-wider">
+                Admin
+              </span>
+            </div>
+          )}
 
           {/* Refresh Button */}
           <button
