@@ -4,7 +4,25 @@ export function getDeviceByLocation(
   devices: Device[],
   location: string,
 ): Device | undefined {
-  return devices.find((d) => d.location === location);
+  const loc = location.toUpperCase().trim();
+  return devices.find((d) => {
+    const dl = d.location.toUpperCase().trim();
+    return dl.includes(loc) || loc.includes(dl);
+  });
+}
+
+export function getLocationKey(location: string): string {
+  const loc = location.toUpperCase().trim();
+  if (loc.includes("PDB")) return "PDB";
+  if (loc.includes("UPS")) return "UPS";
+  if (loc.includes("BATTERY") || loc.includes("BAT")) return "BATTERY";
+  return location;
+}
+
+function roundTime(time: string): string {
+  const d = new Date(time);
+  d.setSeconds(0, 0);
+  return d.toISOString();
 }
 
 export function buildComparisonData(
@@ -16,11 +34,9 @@ export function buildComparisonData(
     string,
     {
       time: string;
-
       "Ruang PDB": number | null;
       "Ruang UPS": number | null;
       "Ruang Baterai": number | null;
-
       "Hum PDB": number | null;
       "Hum UPS": number | null;
       "Hum Baterai": number | null;
@@ -38,11 +54,9 @@ export function buildComparisonData(
       if (!map.has(reading.time)) {
         map.set(reading.time, {
           time: reading.time,
-
           "Ruang PDB": null,
           "Ruang UPS": null,
           "Ruang Baterai": null,
-
           "Hum PDB": null,
           "Hum UPS": null,
           "Hum Baterai": null,
@@ -50,7 +64,6 @@ export function buildComparisonData(
       }
 
       const row = map.get(reading.time)!;
-
       row[tempKey] = reading.temperature;
       row[humKey] = reading.humidity;
     });
@@ -65,40 +78,25 @@ export function buildComparisonData(
   );
 }
 
-export function transformMonitoringData(devices: Device[]) {
-  const map = new Map<
-    string,
-    {
-      time: string;
-      PDB?: number | null;
-      UPS?: number | null;
-      BATTERY?: number | null;
-    }
-  >();
+export function transformMonitoringData(
+  devices: Device[],
+  type: "temperature" | "humidity" = "temperature"
+) {
+  const map = new Map<string, Record<string, any>>();
 
   devices.forEach((device) => {
+    const key = getLocationKey(device.location);
+
     device.readings.forEach((reading) => {
-      if (!map.has(reading.time)) {
-        map.set(reading.time, {
-          time: reading.time,
-        });
+      const bucketTime = roundTime(reading.time);
+
+      if (!map.has(bucketTime)) {
+        map.set(bucketTime, { time: bucketTime });
       }
 
-      const row = map.get(reading.time)!;
-
-      switch (device.location) {
-        case "PDB":
-          row.PDB = reading.temperature;
-          break;
-
-        case "UPS":
-          row.UPS = reading.temperature;
-          break;
-
-        case "BATTERY":
-          row.BATTERY = reading.temperature;
-          break;
-      }
+      const row = map.get(bucketTime)!;
+      const value = type === "temperature" ? reading.temperature : reading.humidity;
+      row[key] = value;
     });
   });
 

@@ -1,7 +1,10 @@
 import { Device } from "@/types/device";
+import { MonitoringTimeRange } from "@/types/monitoring";
 
-export async function getMonitoringData(): Promise<Device[]> {
-  const res = await fetch("/api/dashboard/monitoring", {
+export async function getMonitoringData(range: MonitoringTimeRange = "1h"): Promise<Device[]> {
+  const params = new URLSearchParams({ range });
+  
+  const res = await fetch(`/api/dashboard/monitoring?${params.toString()}`, {
     cache: "no-store",
   });
 

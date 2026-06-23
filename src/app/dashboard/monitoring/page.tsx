@@ -1,52 +1,81 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 
 import MonitoringHeader from "@/components/monitoring/MonitoringHeader";
-import MonitoringChart from "@/components/monitoring/MonitoringChart";
+import EnhancedMonitoringChart from "@/components/monitoring/EnhancedMonitoringChart";
 import MonitoringGrid from "@/components/monitoring/MonitoringGrid";
 
 import { Device } from "@/types/device";
+import { MonitoringTimeRange } from "@/types/monitoring";
 import { getMonitoringData } from "@/services/monitoring.service";
 import { transformMonitoringData } from "@/lib/chartUtils";
 
 export default function MonitoringPage() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [timeRange, setTimeRange] = useState<MonitoringTimeRange>("1h");
+  const mountedRef = useRef(true);
 
-  useEffect(() => {
-    let mounted = true;
-
-    async function fetchData() {
-      try {
-        const data = await getMonitoringData();
-        if (mounted) {
-          setDevices(data);
-          setIsLoading(false);
-        }
-      } catch (err) {
-        console.error(err);
-        if (mounted) setIsLoading(false);
+  const fetchData = useCallback(async (range: MonitoringTimeRange) => {
+    try {
+      const data = await getMonitoringData(range);
+      if (mountedRef.current) {
+        setDevices(data);
+        setIsLoading(false);
+      }
+    } catch (err) {
+      console.error(err);
+      if (mountedRef.current) {
+        setIsLoading(false);
       }
     }
-
-    fetchData();
-    const interval = setInterval(fetchData, 5000);
-
-    return () => {
-      mounted = false;
-      clearInterval(interval);
-    };
   }, []);
 
-  const chartData = transformMonitoringData(devices);
+  useEffect(() => {
+    mountedRef.current = true;
+    setIsLoading(true);
+    fetchData(timeRange);
+
+    const interval = setInterval(() => {
+      if (mountedRef.current) {
+        fetchData(timeRange);
+      }
+    }, 30000);
+
+    return () => {
+      mountedRef.current = false;
+      clearInterval(interval);
+    };
+  }, [timeRange, fetchData]);
+
+  const handleTimeRangeChange = (newRange: MonitoringTimeRange) => {
+    setTimeRange(newRange);
+  };
+
+  const handleManualRefresh = () => {
+    setIsLoading(true);
+    fetchData(timeRange);
+  };
+
+  const temperatureData = transformMonitoringData(devices, "temperature");
+  const humidityData = transformMonitoringData(devices, "humidity");
 
   return (
-    // ✅ Spacing responsif: lebih rapat di mobile, lebih lega di desktop
     <div className="space-y-4 sm:space-y-6">
-      <MonitoringHeader devices={devices} isLoading={isLoading} />
+      <MonitoringHeader 
+        devices={devices} 
+        isLoading={isLoading}
+        timeRange={timeRange}
+        onTimeRangeChange={handleTimeRangeChange}
+        onRefresh={handleManualRefresh}
+      />
 
-      <MonitoringChart data={chartData} isLoading={isLoading} />
+      <EnhancedMonitoringChart 
+        temperatureData={temperatureData}
+        humidityData={humidityData}
+        isLoading={isLoading}
+      />
 
       {!isLoading && <MonitoringGrid devices={devices} />}
     </div>
