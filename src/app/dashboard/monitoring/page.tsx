@@ -25,8 +25,9 @@ export default function MonitoringPage() {
         setIsLoading(false);
       }
     } catch (err) {
-      console.error(err);
+      console.error("Monitoring fetch error:", err);
       if (mountedRef.current) {
+        setDevices([]);
         setIsLoading(false);
       }
     }
