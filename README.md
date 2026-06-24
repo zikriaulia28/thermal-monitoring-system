@@ -19,13 +19,27 @@ Sistem ini menggunakan sensor **SHT31** dengan microcontroller **ESP32-C3 Super 
 
 ## 🎯 Fitur Utama
 
-✅ **📊 Dashboard Real-time** - Visualisasi data suhu dan kelembapan dalam waktu nyata  
-✅ **📈 Grafik Data** - Analisis tren suhu dan kelembapan dengan chart interaktif  
-✅ **🔔 Sistem Alert** - Notifikasi otomatis ketika kondisi berada di luar range normal  
-✅ **📱 Multi-Device Support** - Monitoring sensor dari berbagai lokasi secara bersamaan  
-✅ **⚙️ Device Management** - Kelola dan pantau status perangkat IoT  
-✅ **📋 Report Generation** - Generate laporan monitoring untuk dokumentasi  
-✅ **🎛️ Settings Management** - Konfigurasi threshold dan parameter monitoring
+### ✅ Sudah Tersedia
+
+| Fitur | Status | Keterangan |
+|-------|--------|------------|
+| **📊 Dashboard Real-time** | ✅ | Overview suhu, kelembapan, alert count semua ruangan |
+| **📈 Grafik Interaktif** | ✅ | Recharts chart dengan filter 1h/6h/24h/7d |
+| **🔔 Alert Management** | ✅ | Filter server-side (severity, search, status), acknowledge |
+| **📱 Multi-Device** | ✅ | Monitoring dari berbagai ruangan |
+| **📋 Report Generation** | ✅ | Export CSV & PDF dengan date filter, pagination |
+| **📱 Responsive Layout** | ✅ | Mobile card layout + Desktop table |
+| **🔐 Admin Auth** | ✅ | httpOnly cookie session via env variable |
+| **⚙️ Settings** | ✅ | Threshold temperature & humidity configuration |
+| **⚠️ Toast Notifications** | ✅ | Feedback success/error/warning konsisten |
+
+### 🔄 Dalam Pengembangan
+
+- [ ] Multi-language support (EN, ID)
+- [ ] Email & SMS notifications
+- [ ] Advanced analytics & predictions
+- [ ] Preventive maintenance alerts
+- [ ] Data encryption hardening
 
 ---
 
@@ -44,6 +58,9 @@ Sistem ini menggunakan sensor **SHT31** dengan microcontroller **ESP32-C3 Super 
 | TanStack Query  | 5.101.0 | Server state management    |
 | SWR             | 2.4.1   | Data fetching & caching    |
 | React Hook Form | 7.77.0  | Form management            |
+| Lucide React    | -       | Icons                      |
+| papaparse       | -       | CSV export                 |
+| jspdf           | -       | PDF export                 |
 
 ### Backend & Database
 
@@ -68,8 +85,6 @@ Sistem ini menggunakan sensor **SHT31** dengan microcontroller **ESP32-C3 Super 
 
 ### Model: Device
 
-Menyimpan informasi perangkat IoT:
-
 ```prisma
 model Device {
   id        String @id @default(cuid())
@@ -84,8 +99,6 @@ model Device {
 
 ### Model: SensorLog
 
-Menyimpan data sensor yang dikirim ESP32:
-
 ```prisma
 model SensorLog {
   id          String   @id @default(cuid())
@@ -99,8 +112,6 @@ model SensorLog {
 
 ### Model: Alert
 
-Menyimpan sistem notifikasi dan alert:
-
 ```prisma
 model Alert {
   id          String   @id @default(cuid())
@@ -108,9 +119,20 @@ model Alert {
   location    String   // Lokasi ruangan
   type        String   // Jenis alert (HIGH_TEMP, LOW_HUMIDITY, dll)
   message     String   // Pesan detail
-  severity    String   // Level: low, medium, high, critical
+  severity    String   // Level: CRITICAL, WARNING
   createdAt   DateTime @default(now())
-  acknowledged Boolean  @default(false)  // Sudah dibaca?
+  acknowledged Boolean  @default(false) // Status penanganan
+}
+```
+
+### Model: Settings
+
+```prisma
+model Settings {
+  id                String @id @default(cuid())
+  key               String @unique
+  value             Json
+  updatedAt         DateTime @updatedAt
 }
 ```
 
@@ -146,17 +168,18 @@ Buat file `.env.local` di root directory:
 
 ```env
 # ========== DATABASE ==========
-# Ganti dengan credentials Supabase atau PostgreSQL Anda
-DATABASE_URL="postgresql://user:password@db.supabase.co:5432/postgres"
-DIRECT_URL="postgresql://user:password@db.supabase.co:5432/postgres"
+DATABASE_URL="postgresql://user:***@db.supabase.co:5432/postgres"
+DIRECT_URL="postgresql://user:***@db.supabase.co:5432/postgres"
+
+# ========== ADMIN ==========
+# Password untuk mengakses dashboard admin
+ADMIN_KEY="your-secure-admin-password"
 
 # ========== API ==========
 NEXT_PUBLIC_API_URL="http://localhost:3000"
-
-# ========== SUPABASE (Jika menggunakan) ==========
-# NEXT_PUBLIC_SUPABASE_URL="your_supabase_url"
-# NEXT_PUBLIC_SUPABASE_ANON_KEY="your_anon_key"
 ```
+
+> **Keamanan**: `ADMIN_KEY` wajib di-set di environment variable Vercel untuk production. Jangan commit `.env` ke Git.
 
 **4. Setup Database dengan Prisma**
 
@@ -164,7 +187,7 @@ NEXT_PUBLIC_API_URL="http://localhost:3000"
 # Generate Prisma Client
 npx prisma generate
 
-# Jalankan migrations (buat schema di database)
+# Jalankan migrations
 npx prisma migrate dev
 
 # (Optional) Seed database dengan data dummy
@@ -183,37 +206,45 @@ Aplikasi akan berjalan di [http://localhost:3000](http://localhost:3000)
 
 ## 📱 Panduan Penggunaan
 
-### Untuk Operator & Teknisi
+### 🔐 Admin Access
 
-1. **🏠 Dashboard**
-   - Lihat overview suhu dan kelembapan semua ruangan
-   - Identifikasi ruangan dengan kondisi tidak normal
-   - Monitor trend data secara real-time
+Dashboard dilindungi password. Masukkan password yang sesuai dengan `ADMIN_KEY` di environment variable. Session berlaku 24 jam via httpOnly cookie.
 
-2. **👁️ Monitoring**
-   - Pilih ruangan spesifik untuk monitoring mendalam
-   - Lihat grafik suhu dan kelembapan per jam/hari
-   - Pantau status perangkat (online/offline)
+### 🏠 Dashboard
 
-3. **🔔 Alerts**
-   - Lihat notifikasi alert yang muncul
-   - Tandai alert sebagai "acknowledged" setelah ditangani
-   - Filter alert berdasarkan severity/lokasi
+- Overview suhu rata-rata, humidity rata-rata, total device, alert aktif
+- Status perangkat online/offline
+- Akses cepat ke semua halaman
 
-4. **⚙️ Devices**
-   - Lihat daftar semua sensor/device yang terpasang
-   - Cek status koneksi setiap device
-   - Lihat lokasi dan last seen time
+### 👁️ Monitoring
 
-5. **📊 Reports**
-   - Generate laporan monitoring harian/mingguan
-   - Export data untuk dokumentasi
-   - Analisis tren suhu dan kelembapan
+- Grafik suhu & kelembapan real-time (refresh 30 detik)
+- Filter berdasarkan ruangan (All, PDB, UPS, Battery)
+- Rentang waktu: 1 Jam / 6 Jam / 24 Jam / 7 Hari
+- Threshold line indicator
 
-6. **⚙️ Settings** (Admin)
-   - Konfigurasi threshold temperature dan humidity
-   - Atur interval pengambilan data
-   - Kelola user access
+### 🔔 Alerts
+
+- Server-side filtering (search, severity, status)
+- Acknowledge alert dengan loading state
+- Polling 30 detik
+- Responsive card layout di mobile
+
+### 📊 Reports
+
+- 3 tipe laporan: Daily Summary, Detailed Logs, Alerts Report
+- Filter tanggal, lokasi, severity
+- Export CSV & PDF dengan format:
+  - Tanggal WIB (DD/MM/YYYY HH:mm:ss)
+  - Unit label (°C, %)
+  - Pagination server-side
+- Download dengan loading indicator
+
+### ⚙️ Settings (Admin)
+
+- Konfigurasi threshold suhu (min/max)
+- Konfigurasi threshold humidity (min/max)
+- Auto-save dengan Toast feedback
 
 ---
 
@@ -223,12 +254,20 @@ Aplikasi akan berjalan di [http://localhost:3000](http://localhost:3000)
 
 | Method | Endpoint                    | Deskripsi                  |
 | ------ | --------------------------- | -------------------------- |
-| GET    | `/api/dashboard/overview`   | Data overview semua device |
+| GET    | `/api/dashboard/overview`   | Overview semua device      |
 | GET    | `/api/dashboard/monitoring` | Data monitoring real-time  |
-| GET    | `/api/dashboard/alerts`     | Daftar semua alerts        |
-| GET    | `/api/dashboard/chart`      | Data untuk charts/grafik   |
+| GET    | `/api/dashboard/alerts`     | Alerts dengan filter      |
+| GET    | `/api/dashboard/chart`      | Data charts/grafik        |
 | GET    | `/api/dashboard/devices`    | Daftar devices & status    |
 | GET    | `/api/dashboard/reports`    | Data laporan               |
+
+### Reports APIs
+
+| Method | Endpoint              | Deskripsi                          |
+| ------ | --------------------- | ---------------------------------- |
+| GET    | `/api/reports/summary`  | Daily summary statistics          |
+| GET    | `/api/reports/logs`     | Detailed sensor logs              |
+| GET    | `/api/reports/alerts`   | Alert report (dengan stats total) |
 
 ### Sensor APIs
 
@@ -238,6 +277,13 @@ Aplikasi akan berjalan di [http://localhost:3000](http://localhost:3000)
 | POST   | `/api/sensors`          | Tambah sensor baru     |
 | GET    | `/api/sensors/:id`      | Detail sensor spesifik |
 | POST   | `/api/sensors/:id/data` | Kirim data dari ESP32  |
+
+### Auth APIs
+
+| Method | Endpoint                    | Deskripsi                     |
+| ------ | --------------------------- | ----------------------------- |
+| POST   | `/api/auth/verify-admin`    | Verifikasi password admin     |
+| GET    | `/api/auth/logout`          | Hapus session cookie          |
 
 ---
 
@@ -258,35 +304,39 @@ Aplikasi akan berjalan di [http://localhost:3000](http://localhost:3000)
 
 ### Firmware Configuration
 
-- Sensor membaca data setiap 30 detik (dapat dikonfigurasi)
+- Sensor membaca data setiap 30 detik
 - Kirim ke API setiap 5 menit atau saat ada perubahan >1°C / >5% RH
 - Auto-reconnect jika WiFi terputus
+- Format data: JSON dengan `temperature`, `humidity`, `deviceId`
 
 ### Upload Firmware
 
 1. Install Arduino IDE atau PlatformIO
 2. Setup ESP32 board library
-3. Flash firmware ke device
-4. Konfigurasi WiFi dan API endpoint
+3. Konfigurasi WiFi dan API endpoint di firmware
+4. Flash firmware ke device
 
 ---
 
 ## 📦 Build untuk Production
 
 ```bash
-# Build aplikasi untuk production
+# Build aplikasi
 npm run build
 
 # Jalankan production server
 npm start
 ```
 
-Deployment bisa dilakukan ke:
+### Deployment ke Vercel
 
-- **Vercel** (recommended untuk Next.js)
-- **Railway**
-- **Render**
-- **Self-hosted server**
+1. Push repository ke GitHub
+2. Import project di Vercel
+3. Set environment variables:
+   - `DATABASE_URL`
+   - `DIRECT_URL`
+   - `ADMIN_KEY` → password dashboard
+4. Deploy
 
 ---
 
@@ -299,26 +349,32 @@ Error: connect ECONNREFUSED
 ```
 
 **Solusi:**
-
-- Pastikan DATABASE_URL dan DIRECT_URL sudah benar
+- Pastikan `DATABASE_URL` dan `DIRECT_URL` sudah benar
 - Cek koneksi ke database server
 - Test connection: `psql <DATABASE_URL>`
+- Untuk Supabase, pastikan IP diizinkan di database settings
+
+### Admin Password Tidak Cocok
+
+**Solusi:**
+- Pastikan `ADMIN_KEY` sudah di-set di environment variable
+- Restart server setelah mengubah `.env`
+- Untuk Vercel: set di dashboard → Environment Variables
+- Password bersifat case-sensitive
 
 ### Sensor Data Tidak Muncul
 
 **Solusi:**
-
 - Cek ESP32 sudah terhubung ke WiFi (lihat serial monitor)
 - Verify API endpoint di firmware sudah benar
 - Cek network requests di browser DevTools
 - Lihat server logs: `npm run dev`
 
-### Device Offline/Last Seen Tidak Update
+### Device Offline
 
 **Solusi:**
-
 - Cek koneksi WiFi ESP32
-- Verify API POST endpoint `/api/sensors/:id/data` accessible
+- Verify API endpoint `/api/sensors/:id/data` accessible
 - Check firewall rules
 - Restart device atau reset WiFi
 
@@ -331,7 +387,9 @@ thermal-monitoring-system/
 ├── src/
 │   ├── app/
 │   │   ├── api/                 # API Routes
+│   │   │   ├── auth/            # Auth (verify-admin, logout)
 │   │   │   ├── dashboard/       # Dashboard APIs
+│   │   │   ├── reports/         # Reports APIs
 │   │   │   └── sensors/         # Sensor APIs
 │   │   ├── dashboard/           # Dashboard Pages
 │   │   │   ├── monitoring/
@@ -344,52 +402,66 @@ thermal-monitoring-system/
 │   │   └── page.tsx
 │   ├── components/              # React Components
 │   │   ├── cards/
-│   │   ├── charts/              # Recharts visualizations
+│   │   ├── charts/
 │   │   ├── tables/
 │   │   ├── alerts/
 │   │   ├── devices/
-│   │   └── ui/                  # Shadcn components
-│   ├── lib/                     # Utilities
+│   │   ├── filters/
+│   │   └── ui/                  # Toast, dll
+│   ├── hooks/                   # Custom hooks
+│   ├── lib/                     # Utilities & helpers
 │   ├── services/                # API clients
 │   └── types/                   # TypeScript types
 ├── prisma/
-│   └── schema.prisma            # Database schema
-├── public/                      # Static assets
+│   └── schema.prisma
+├── public/
+├── .env.example
 ├── package.json
 ├── tsconfig.json
-└── next.config.ts
+├── next.config.ts
+└── ADMIN_ACCESS_SETUP.md
 ```
 
 ---
 
-## 📈 Roadmap & Fitur yang Akan Datang
+## 📈 Roadmap
 
-- [ ] Multi-language support (EN, ID, China)
+### ✅ Tersedia
+- ✅ Admin authentication dengan httpOnly cookie
+- ✅ Dashboard overview real-time
+- ✅ Monitoring dengan grafik interaktif
+- ✅ Alert management dengan server-side filtering
+- ✅ Report generation (CSV & PDF)
+- ✅ Responsive layout (mobile, tablet, desktop)
+- ✅ Toast notification system
+- ✅ Settings management
+
+### 🔄 Rencana ke Depan
+- [ ] Multi-language support (EN, ID)
 - [ ] Email & SMS notifications
-- [ ] Data export (CSV, Excel, PDF)
 - [ ] Advanced analytics & ML predictions
 - [ ] Mobile app (iOS/Android)
 - [ ] Preventive maintenance alerts
-- [ ] User authentication & role management
+- [ ] User role management (admin, operator, teknisi)
 - [ ] Data encryption & security hardening
 
 ---
 
 ## 👥 Tim Pengembang
 
-- **Project Owner**: Coolman/Facility Support Team
+- **Project Owner**: Coolman / Facility Support Team
 - **Area**: Technical Support & Facility Management
-- **Status**: Work in Progress (v0.1.0)
-- **Last Updated**: June 2026
+- **Status**: Production Ready (v1.0.0)
+- **Last Updated**: Juni 2026
 
 ---
 
 ## 📝 Catatan Penting
 
-⚠️ **Sistem dalam tahap development** - fitur masih terus dikembangkan  
-💾 **Backup database secara berkala** untuk keamanan data historis  
-🔐 **Gunakan environment variables** - jangan commit `.env` ke Git  
-🔄 **Update firmware ESP32 secara berkala** untuk patch security  
+⚠️ **ADMIN_KEY** wajib di-set di environment variable Vercel untuk production
+💾 **Backup database** secara berkala untuk keamanan data historis
+🔐 **Jangan commit `.env`** ke Git — gunakan `.env.example`
+🔄 **Update firmware ESP32** secara berkala untuk patch security
 📞 **Support**: Hubungi tim Technical Support untuk bantuan
 
 ---
