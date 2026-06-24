@@ -3,9 +3,10 @@ import { Alert } from "@/types/alert";
 interface Props {
   alert: Alert;
   onAcknowledge: (id: string) => void;
+  isLoading?: boolean;
 }
 
-export default function AlertRow({ alert, onAcknowledge }: Props) {
+export default function AlertRow({ alert, onAcknowledge, isLoading }: Props) {
   const formattedTime = new Date(alert.createdAt).toLocaleString("id-ID", {
     timeZone: "Asia/Jakarta",
     year: "numeric",
@@ -73,12 +74,13 @@ export default function AlertRow({ alert, onAcknowledge }: Props) {
         {!alert.acknowledged ? (
           <button
             onClick={() => onAcknowledge(alert.id)}
+            disabled={isLoading}
             className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm 
                      transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 
                      focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-slate-800
-                     min-h-[36px]"
+                     disabled:opacity-50 disabled:cursor-not-allowed min-h-[36px]"
           >
-            Acknowledge
+            {isLoading ? "Processing..." : "Acknowledge"}
           </button>
         ) : (
           <span className="text-xs text-slate-400 dark:text-slate-600">-</span>

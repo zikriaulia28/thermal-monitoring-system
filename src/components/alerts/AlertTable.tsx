@@ -14,12 +14,14 @@ interface PaginationProps {
 interface Props {
   alerts: Alert[];
   onAcknowledge: (id: string) => void;
+  ackLoadingId?: string | null;
   pagination?: PaginationProps;
 }
 
 export default function AlertTable({
   alerts,
   onAcknowledge,
+  ackLoadingId,
   pagination,
 }: Props) {
   return (
@@ -45,6 +47,7 @@ export default function AlertTable({
                   key={alert.id}
                   alert={alert}
                   onAcknowledge={onAcknowledge}
+                  isLoading={ackLoadingId === alert.id}
                 />
               ))
             ) : (
@@ -126,9 +129,10 @@ export default function AlertTable({
               {!alert.acknowledged && (
                 <button
                   onClick={() => onAcknowledge(alert.id)}
-                  className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 active:bg-blue-800"
+                  disabled={ackLoadingId === alert.id}
+                  className="w-full rounded-md bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm transition-colors hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Acknowledge
+                  {ackLoadingId === alert.id ? "Processing..." : "Acknowledge"}
                 </button>
               )}
             </div>

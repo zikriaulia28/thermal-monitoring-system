@@ -1,5 +1,11 @@
 import { Alert } from "@/types/alert";
 
+export interface AlertFilters {
+  search?: string;
+  severity?: string;
+  status?: string;
+}
+
 export interface AlertsResponse {
   data: Alert[];
   pagination: {
@@ -16,13 +22,29 @@ export interface AlertsResponse {
   };
 }
 
-export async function getAlerts(page = 1, limit = 10): Promise<AlertsResponse> {
-  const response = await fetch(
-    `/api/dashboard/alerts?page=${page}&limit=${limit}`,
-    {
-      cache: "no-store",
-    },
-  );
+export async function getAlerts(
+  page = 1,
+  limit = 10,
+  filters?: AlertFilters,
+): Promise<AlertsResponse> {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit),
+  });
+
+  if (filters?.search) {
+    params.set("search", filters.search);
+  }
+  if (filters?.severity) {
+    params.set("severity", filters.severity);
+  }
+  if (filters?.status) {
+    params.set("status", filters.status);
+  }
+
+  const response = await fetch(`/api/dashboard/alerts?${params.toString()}`, {
+    cache: "no-store",
+  });
 
   if (!response.ok) {
     throw new Error("Failed to fetch alerts");

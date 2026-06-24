@@ -1,31 +1,51 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import useSWR from "swr";
+import debounce from "lodash.debounce";
 
 import AlertSummary from "@/components/alerts/AlertSummary";
 import AlertTable from "@/components/alerts/AlertTable";
 import AlertFilter from "@/components/alerts/AlertFilter";
+import { ToastProvider, useToast } from "@/components/ui/Toast";
 
 import { acknowledgeAlert, getAlerts } from "@/services/alertService";
 
-export default function AlertsPage() {
+function AlertsContent() {
   const [currentPage, setCurrentPage] = useState(1);
-  const alertsPerPage = 10;
-
   const [search, setSearch] = useState("");
   const [severity, setSeverity] = useState("");
   const [status, setStatus] = useState("");
+  const [ackLoadingId, setAckLoadingId] = useState<string | null>(null);
+
+  const { showToast } = useToast();
+
+  // Debounce search input
+  const debouncedSearch = useMemo(
+    () => debounce((value: string) => {
+      setSearch(value);
+    }, 300),
+    [],
+  );
+
+  const handleSearchChange = (value: string) => {
+    debouncedSearch(value);
+  };
 
   const {
     data: response,
     isLoading,
     mutate,
   } = useSWR(
-    ["alerts", currentPage, alertsPerPage],
-    () => getAlerts(currentPage, alertsPerPage),
+    ["alerts", currentPage, search, severity, status],
+    () =>
+      getAlerts(currentPage, 10, {
+        search,
+        severity,
+        status,
+      }),
     {
-      refreshInterval: 5000,
+      refreshInterval: 30000,
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
       dedupingInterval: 2000,
@@ -34,15 +54,22 @@ export default function AlertsPage() {
 
   const alerts = response?.data ?? [];
   const totalAlerts = response?.pagination?.total || 0;
-  const totalPages = Math.ceil(totalAlerts / alertsPerPage);
+  const totalPages = Math.ceil(totalAlerts / 10);
   const summary = response?.summary;
 
   const handleAcknowledge = useCallback(
     async (id: string) => {
-      if (!response) return;
+      setAckLoadingId(id);
+
+      if (!response) {
+        showToast("error", "Gagal mengubah status alert.");
+        setAckLoadingId(null);
+        return;
+      }
 
       const previousData = response;
 
+      // Optimistic update
       mutate(
         {
           ...response,
@@ -68,32 +95,24 @@ export default function AlertsPage() {
       try {
         await acknowledgeAlert(id);
         mutate();
+        showToast("success", "Alert berhasil di-acknowledge.");
       } catch (error) {
         console.error("Failed to acknowledge:", error);
         mutate(previousData, false);
-        alert("Gagal mengubah status alert. Silakan coba lagi.");
+        showToast("error", "Gagal mengubah status alert. Silakan coba lagi.");
+      } finally {
+        setAckLoadingId(null);
       }
     },
-    [response, mutate],
+    [response, mutate, showToast],
   );
 
-  const filteredAlerts = alerts.filter((alert) => {
-    const keyword = search.toLowerCase();
-    const matchSearch =
-      alert.deviceId.toLowerCase().includes(keyword) ||
-      alert.location.toLowerCase().includes(keyword) ||
-      alert.message.toLowerCase().includes(keyword);
-    const matchSeverity = severity === "" || alert.severity === severity;
-    const matchStatus =
-      status === "" ||
-      (status === "active" && !alert.acknowledged) ||
-      (status === "ack" && alert.acknowledged);
-
-    return matchSearch && matchSeverity && matchStatus;
-  });
+  // Reset to page 1 when filters change
+  const handleFilterChange = useCallback(() => {
+    setCurrentPage(1);
+  }, []);
 
   return (
-    // ✅ Padding responsif
     <div className="px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6">
       {/* Header */}
       <div className="mb-4 sm:mb-6">
@@ -116,11 +135,17 @@ export default function AlertsPage() {
       <div className="mb-4 sm:mb-6">
         <AlertFilter
           search={search}
-          setSearch={setSearch}
+          setSearch={handleSearchChange}
           severity={severity}
-          setSeverity={setSeverity}
+          setSeverity={(val) => {
+            setSeverity(val);
+            handleFilterChange();
+          }}
           status={status}
-          setStatus={setStatus}
+          setStatus={(val) => {
+            setStatus(val);
+            handleFilterChange();
+          }}
         />
       </div>
 
@@ -134,15 +159,16 @@ export default function AlertsPage() {
       {/* Alert Table & Pagination */}
       {!isLoading && (
         <AlertTable
-          alerts={filteredAlerts}
+          alerts={alerts}
           onAcknowledge={handleAcknowledge}
+          ackLoadingId={ackLoadingId}
           pagination={
             totalPages > 1
               ? {
                   currentPage,
                   totalPages,
                   totalAlerts,
-                  alertsPerPage,
+                  alertsPerPage: 10,
                   onPageChange: setCurrentPage,
                 }
               : undefined
@@ -150,5 +176,13 @@ export default function AlertsPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function AlertsPage() {
+  return (
+    <ToastProvider>
+      <AlertsContent />
+    </ToastProvider>
   );
 }

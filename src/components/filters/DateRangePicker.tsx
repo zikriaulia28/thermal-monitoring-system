@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X } from "lucide-react";
-import Toast from "@/components/ui/Toast";
+import { Toast } from "@/components/ui/Toast";
 
 interface DateRangePickerProps {
   from: Date | null;

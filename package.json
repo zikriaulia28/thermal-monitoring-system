@@ -16,6 +16,7 @@
     "clsx": "^2.1.1",
     "framer-motion": "^12.40.0",
     "jspdf": "^4.2.1",
+    "lodash.debounce": "^4.0.8",
     "lucide-react": "^1.17.0",
     "next": "16.2.7",
     "papaparse": "^5.5.3",
@@ -34,6 +35,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/lodash.debounce": "^4.0.9",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

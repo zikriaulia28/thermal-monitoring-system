@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
 import { Settings as SettingsType, DEFAULT_SETTINGS } from "@/types/settings";
 import { Loader2, RotateCcw, Save, Thermometer, Droplets, Database, Clock, Shield, X, Lock } from "lucide-react";
-import Toast from "@/components/ui/Toast";
+import { Toast } from "@/components/ui/Toast";
 import { checkAdminAccess, verifyAdminKey, grantAdminAccess } from "@/lib/adminAccess";
 
 export default function SettingsPage() {
