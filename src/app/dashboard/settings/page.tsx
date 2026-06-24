@@ -31,9 +31,9 @@ export default function SettingsPage() {
     }
   }, [settings]);
 
-  const handleKeySubmit = () => {
-    if (verifyAdminKey(keyInput)) {
-      grantAdminAccess();
+  const handleKeySubmit = async () => {
+    const isValid = await verifyAdminKey(keyInput);
+    if (isValid) {
       setIsAuthorized(true);
       setKeyError("");
     } else {

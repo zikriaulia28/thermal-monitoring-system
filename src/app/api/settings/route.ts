@@ -1,8 +1,11 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { DEFAULT_SETTINGS } from '@/types/settings';
+import { NextRequest, NextResponse } from "next/server";
+import { checkAdminSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { DEFAULT_SETTINGS } from "@/types/settings";
 
 export async function GET() {
+  // Settings GET doesn't require auth - dashboard needs to read thresholds for chart reference lines
+  // but we still guard the sensitive settings differently
   try {
     let settings = await prisma.settings.findFirst();
 
@@ -17,9 +20,9 @@ export async function GET() {
       data: settings,
     });
   } catch (error) {
-    console.error('GET /api/settings error:', error);
+    console.error("GET /api/settings error:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch settings' },
+      { success: false, error: "Failed to fetch settings" },
       { status: 500 }
     );
   }

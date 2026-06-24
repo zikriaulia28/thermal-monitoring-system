@@ -1,8 +1,19 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { validateSettings } from '@/lib/settingsUtils';
+import { NextRequest, NextResponse } from "next/server";
+import { checkAdminSession } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { validateSettings } from "@/lib/settingsUtils";
 
-export async function PATCH(request: Request) {
+export async function PATCH(request: NextRequest) {
+  // Guard: Only authenticated admin can update settings
+  const isAuthenticated = await checkAdminSession();
+
+  if (!isAuthenticated) {
+    return NextResponse.json(
+      { success: false, error: "Unauthorized", message: "Admin authentication required" },
+      { status: 401 }
+    );
+  }
+
   try {
     const body = await request.json();
 
@@ -32,12 +43,12 @@ export async function PATCH(request: Request) {
     return NextResponse.json({
       success: true,
       data: settings,
-      message: 'Settings updated successfully',
+      message: "Settings updated successfully",
     });
   } catch (error) {
-    console.error('PATCH /api/settings error:', error);
+    console.error("PATCH /api/settings/update error:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to update settings' },
+      { success: false, error: "Failed to update settings" },
       { status: 500 }
     );
   }

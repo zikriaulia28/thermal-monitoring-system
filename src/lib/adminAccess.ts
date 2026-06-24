@@ -1,48 +1,59 @@
-const ADMIN_KEY = "cpems2026";
 const STORAGE_KEY = "cpems_admin";
-const EXPIRY_HOURS = 24;
 
-interface AdminSession {
-  authorized: boolean;
-  timestamp: number;
-}
-
+// Check if admin session exists (UI-only convenience check)
+// NOTE: This is NOT a security check — it just tells the UI whether to show the Admin badge.
+// The REAL security validation happens server-side via httpOnly cookie on every protected API call.
 export function checkAdminAccess(): boolean {
   if (typeof window === "undefined") return false;
 
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
-
-    const session: AdminSession = JSON.parse(raw);
-    if (!session.authorized) return false;
-
-    const elapsed = Date.now() - session.timestamp;
-    const maxAge = EXPIRY_HOURS * 60 * 60 * 1000;
-
-    if (elapsed > maxAge) {
-      localStorage.removeItem(STORAGE_KEY);
-      return false;
-    }
-
-    return true;
+    const session = JSON.parse(raw);
+    return session.authorized === true;
   } catch {
     return false;
   }
 }
 
-export function verifyAdminKey(key: string): boolean {
-  return key === ADMIN_KEY;
+// Verify admin password via server-side API
+// Returns true if password is correct (httpOnly cookie is set by server)
+export async function verifyAdminKey(password: string): Promise<boolean> {
+  try {
+    const response = await fetch("/api/auth/verify-admin", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success) {
+        grantAdminAccess();
+        return true;
+      }
+    }
+    return false;
+  } catch {
+    return false;
+  }
 }
 
+// Set local UI flag (after successful server-side verification)
 export function grantAdminAccess(): void {
-  const session: AdminSession = {
-    authorized: true,
-    timestamp: Date.now(),
-  };
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+  localStorage.setItem(
+    STORAGE_KEY,
+    JSON.stringify({ authorized: true, timestamp: Date.now() })
+  );
 }
 
-export function revokeAdminAccess(): void {
+// Revoke admin access — clears local UI flag + server-side cookie
+export async function revokeAdminAccess(): Promise<void> {
   localStorage.removeItem(STORAGE_KEY);
+
+  try {
+    await fetch("/api/auth/logout", { method: "POST" });
+  } catch {
+    // Best effort — cookie will expire on its own
+  }
 }
