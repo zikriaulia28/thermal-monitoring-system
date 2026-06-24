@@ -1,3 +1,16 @@
+import { Prisma } from '@prisma/client';
+
+export interface AlertReportItem {
+  id: string;
+  device: string;
+  location: string;
+  type: string;
+  message: string;
+  severity: string;
+  createdAt: string;
+  acknowledged: boolean;
+}
+
 export interface ReportSummary {
   date: string;
   location: string;
@@ -16,17 +29,6 @@ export interface DetailedLogReport {
   location: string;
   temperature: number;
   humidity: number;
-}
-
-export interface AlertReportItem {
-  id: string;
-  device: string;
-  location: string;
-  type: string;
-  message: string;
-  severity: string;
-  createdAt: string;
-  acknowledged: boolean;
 }
 
 export interface DevicePerformance {
@@ -56,10 +58,20 @@ export interface ReportRequest {
 export interface ReportResponse {
   type: ReportType;
   generatedAt: string;
-  data: any[];
+  data: Array<AlertReportItem | ReportSummary | DetailedLogReport | DevicePerformance>;
   summary: {
     totalRecords: number;
     period: string;
     devices: number;
   };
+}
+
+// Export types
+export interface AlertStats {
+  total: number;
+  critical: number;
+  warning: number;
+  acknowledged: number;
+  pending: number;
+  period: string;
 }

@@ -1,14 +1,21 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
+function formatDateWIB(date: Date): string {
+  const d = new Date(date);
+  const wib = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(wib.getDate())}/${pad(wib.getMonth() + 1)}/${wib.getFullYear()} ${pad(wib.getHours())}:${pad(wib.getMinutes())}:${pad(wib.getSeconds())}`;
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const deviceId = searchParams.get('deviceId');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '100');
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '100')));
     const skip = (page - 1) * limit;
 
     if (!startDate || !endDate) {
@@ -22,7 +29,7 @@ export async function GET(request: Request) {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
-    const whereClause: any = {
+    const where: Record<string, unknown> = {
       createdAt: {
         gte: start,
         lte: end,
@@ -30,12 +37,12 @@ export async function GET(request: Request) {
     };
 
     if (deviceId) {
-      whereClause.deviceId = deviceId;
+      where.deviceId = deviceId;
     }
 
     const [logs, total] = await Promise.all([
       prisma.sensorLog.findMany({
-        where: whereClause,
+        where,
         include: {
           device: {
             select: {
@@ -50,11 +57,11 @@ export async function GET(request: Request) {
         skip,
         take: limit,
       }),
-      prisma.sensorLog.count({ where: whereClause }),
+      prisma.sensorLog.count({ where }),
     ]);
 
     const formattedLogs = logs.map((log) => ({
-      time: new Date(log.createdAt).toLocaleString('id-ID'),
+      time: formatDateWIB(new Date(log.createdAt)),
       device: log.device.deviceId,
       location: log.device.location,
       temperature: log.temperature,
@@ -83,3 +90,5 @@ export async function GET(request: Request) {
     );
   }
 }
+
+export const dynamic = 'force-dynamic';

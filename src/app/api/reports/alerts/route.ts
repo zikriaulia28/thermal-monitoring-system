@@ -1,5 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
+
+function formatDateWIB(date: Date): string {
+  const d = new Date(date);
+  const wib = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(wib.getDate())}/${pad(wib.getMonth() + 1)}/${wib.getFullYear()} ${pad(wib.getHours())}:${pad(wib.getMinutes())}:${pad(wib.getSeconds())}`;
+}
 
 export async function GET(request: Request) {
   try {
@@ -8,8 +16,8 @@ export async function GET(request: Request) {
     const endDate = searchParams.get('endDate');
     const severity = searchParams.get('severity');
     const locationFilter = searchParams.get('location');
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50')));
     const skip = (page - 1) * limit;
 
     if (!startDate || !endDate) {
@@ -23,7 +31,7 @@ export async function GET(request: Request) {
     const end = new Date(endDate);
     end.setHours(23, 59, 59, 999);
 
-    const whereClause: any = {
+    const whereClause: Prisma.AlertWhereInput = {
       createdAt: {
         gte: start,
         lte: end,
@@ -38,17 +46,27 @@ export async function GET(request: Request) {
       whereClause.location = { contains: locationFilter, mode: 'insensitive' };
     }
 
-    const [alerts, total] = await Promise.all([
+    const [alerts, total, allAlertsForStats] = await Promise.all([
       prisma.alert.findMany({
         where: whereClause,
-        orderBy: {
-          createdAt: 'desc',
-        },
+        orderBy: { createdAt: 'desc' },
         skip,
         take: limit,
       }),
       prisma.alert.count({ where: whereClause }),
+      prisma.alert.findMany({
+        where: whereClause,
+        select: { severity: true, acknowledged: true },
+      }),
     ]);
+
+    const stats = {
+      total,
+      critical: allAlertsForStats.filter((a) => a.severity === 'CRITICAL').length,
+      warning: allAlertsForStats.filter((a) => a.severity === 'WARNING').length,
+      acknowledged: allAlertsForStats.filter((a) => a.acknowledged).length,
+      pending: allAlertsForStats.filter((a) => !a.acknowledged).length,
+    };
 
     const formattedAlerts = alerts.map((alert) => ({
       id: alert.id,
@@ -57,18 +75,9 @@ export async function GET(request: Request) {
       type: alert.type,
       message: alert.message,
       severity: alert.severity,
-      createdAt: new Date(alert.createdAt).toLocaleString('id-ID'),
+      createdAt: formatDateWIB(new Date(alert.createdAt)),
       acknowledged: alert.acknowledged,
     }));
-
-    // Summary stats
-    const stats = {
-      total,
-      critical: alerts.filter((a) => a.severity === 'CRITICAL').length,
-      warning: alerts.filter((a) => a.severity === 'WARNING').length,
-      acknowledged: alerts.filter((a) => a.acknowledged).length,
-      pending: alerts.filter((a) => !a.acknowledged).length,
-    };
 
     return NextResponse.json({
       success: true,
@@ -92,3 +101,5 @@ export async function GET(request: Request) {
     );
   }
 }
+
+export const dynamic = 'force-dynamic';
