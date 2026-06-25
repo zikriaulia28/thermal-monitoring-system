@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { getDeviceStatus, getOfflineThresholdMs } from "@/lib/deviceStatus";
 
 export const dynamic = "force-dynamic";
 
@@ -28,6 +29,10 @@ export async function GET(request: Request) {
 
     const fromDate = new Date(now.getTime() - hoursAgo * 60 * 60 * 1000);
 
+    // Fetch settings for adaptive threshold
+    const settings = await prisma.settings.findFirst();
+    const intervalSeconds = settings?.monitoringIntervalSeconds;
+
     const devices = await prisma.device.findMany({
       include: {
         logs: {
@@ -44,12 +49,10 @@ export async function GET(request: Request) {
       },
     });
 
-    const OFFLINE_THRESHOLD = 5 * 60 * 1000;
-
     const result = devices.map((device) => {
       const lastSeen = device.lastSeen?.getTime();
       const isOnline =
-        lastSeen !== undefined && Date.now() - lastSeen < OFFLINE_THRESHOLD;
+        lastSeen !== undefined && Date.now() - lastSeen < getOfflineThresholdMs(intervalSeconds);
 
       return {
         id: device.deviceId,

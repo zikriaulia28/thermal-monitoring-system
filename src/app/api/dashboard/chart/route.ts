@@ -25,6 +25,10 @@ export async function GET(request: Request) {
       to = dateRange.to;
     }
 
+    // Fetch settings for adaptive threshold
+    const settings = await prisma.settings.findFirst();
+    const intervalSeconds = settings?.monitoringIntervalSeconds;
+
     const whereClause: any = {
       logs: {
         some: {
@@ -68,7 +72,7 @@ export async function GET(request: Request) {
         id: device.deviceId,
         name: `Ruang ${device.location}`,
         location: device.location,
-        status: getDeviceStatus(device.lastSeen),
+        status: getDeviceStatus(device.lastSeen, intervalSeconds),
         lastSeen: device.lastSeen,
         readings: rawLogs.map((log) => ({
           time: log.createdAt.toISOString(),
