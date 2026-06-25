@@ -1,4 +1,4 @@
-import { DashboardOverview } from "@/types/dashboard";
+import { DashboardOverview, DailyStatsResponse } from "@/types/dashboard";
 import { Device } from "@/types/device";
 import { TimeRange } from "@/types/filter";
 
@@ -37,6 +37,18 @@ export async function getChartData(
 
   if (!res.ok) {
     throw new Error("Failed to fetch chart data");
+  }
+
+  return res.json();
+}
+
+export async function getDailyStats(): Promise<DailyStatsResponse> {
+  const res = await fetch("/api/dashboard/daily-stats", {
+    cache: "no-store",
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch daily stats");
   }
 
   return res.json();

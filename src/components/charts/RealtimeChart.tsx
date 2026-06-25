@@ -1,30 +1,68 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Activity, Thermometer, Droplets, MapPin } from "lucide-react";
+import { Activity, Thermometer, Droplets, MapPin, TrendingUp } from "lucide-react";
 
-import DeviceMetrics from "./DeviceMetrics";
 import ComparisonTemperatureChart from "./ComparisonTemperatureChart";
 import ComparisonHumidityChart from "./ComparisonHumidityChart";
 import DeviceDetailChart from "./DeviceDetailChart";
+import DailyTrendChart from "./DailyTrendChart";
 
 import { Device } from "@/types/device";
+import { DeviceDailyStat, HourlyReading } from "@/types/dashboard";
 import { buildComparisonData, getDeviceByLocation } from "@/lib/chartUtils";
 import { TimeRange, TIME_RANGE_OPTIONS } from "@/types/filter";
+import { getDailyStats } from "@/services/dashboard.service";
 
 interface RealtimeChartProps {
   devices: Device[];
   isLoading?: boolean;
   timeRange?: TimeRange;
+  /** Called when user switches between tabs so parent can show/hide DeviceMetrics */
+  onTabChange?: (tab: string) => void;
 }
+
+export type { RealtimeChartProps };
 
 export default function RealtimeChart({
   devices,
   isLoading = false,
   timeRange = "realtime",
+  onTabChange,
 }: RealtimeChartProps) {
-  const [activeTab, setActiveTab] = useState("comparison-temp");
+  const [activeTab, setActiveTab] = useState("daily-trend");
+  const [dailyStats, setDailyStats] = useState<{
+    stats: DeviceDailyStat[];
+    hourly: HourlyReading[];
+  }>({ stats: [], hourly: [] });
+  const [dailyLoading, setDailyLoading] = useState(false);
+
+  // Notify parent when active tab changes
+  const handleTabChange = useCallback(
+    (value: string) => {
+      setActiveTab(value);
+      onTabChange?.(value);
+    },
+    [onTabChange],
+  );
+
+  // Fetch daily stats on mount
+  useEffect(() => {
+    const load = async () => {
+      setDailyLoading(true);
+      try {
+        const data = await getDailyStats();
+        setDailyStats(data);
+      } catch {
+        // silent
+      } finally {
+        setDailyLoading(false);
+      }
+    };
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const pdbDevice = getDeviceByLocation(devices, "PDB");
   const upsDevice = getDeviceByLocation(devices, "UPS");
@@ -35,7 +73,9 @@ export default function RealtimeChart({
     [pdbDevice, upsDevice, batteryDevice],
   );
 
-  const currentSingleDevice = devices.find((device) => device.id === activeTab);
+  const currentSingleDevice = devices.find(
+    (device) => String(device.id) === activeTab,
+  );
   const singleDeviceData = currentSingleDevice?.readings ?? [];
 
   const timeRangeLabel =
@@ -43,6 +83,16 @@ export default function RealtimeChart({
     "Last 60 minutes";
 
   const getContextInfo = () => {
+    if (activeTab === "daily-trend") {
+      return {
+        title: "Daily Temperature Trend",
+        description:
+          "Rata-rata, minimum & maksimum suhu per jam hari ini (WIB)",
+        unit: "°C",
+        icon: <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" />,
+        latest: "Per jam",
+      };
+    }
     if (activeTab === "comparison-temp") {
       return {
         title: "Temperature Comparison",
@@ -107,15 +157,16 @@ export default function RealtimeChart({
         </div>
       </div>
 
-      {/* Metrics Section */}
-      <div className="p-3 sm:p-4 md:p-5 pt-2 sm:pt-3 md:pt-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
-        <DeviceMetrics devices={devices} />
-      </div>
-
-      {/* Tabs Navigation */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <div className="relative -mx-3 sm:-mx-4 md:-mx-5 px-3 sm:px-4 md:px-5">
+      {/* Tabs Navigation — moved above DeviceMetrics */}
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
+        <div className="relative px-3 sm:px-4 md:px-5 pt-3 sm:pt-4">
           <TabsList className="w-full justify-start overflow-x-auto bg-slate-100 dark:bg-slate-900 p-1 rounded-lg gap-1 scrollbar-hide flex-nowrap">
+            <TabsTrigger
+              value="daily-trend"
+              className="flex-shrink-0 whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 shadow-sm px-3 py-1.5 text-xs sm:text-sm"
+            >
+              📈 Harian
+            </TabsTrigger>
             <TabsTrigger
               value="comparison-temp"
               className="flex-shrink-0 whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 shadow-sm px-3 py-1.5 text-xs sm:text-sm"
@@ -131,7 +182,7 @@ export default function RealtimeChart({
             {devices.map((device) => (
               <TabsTrigger
                 key={device.id}
-                value={device.id}
+                value={String(device.id)}
                 className="flex-shrink-0 whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 shadow-sm px-2.5 py-1.5 text-xs sm:text-sm"
               >
                 📍 {device.location}
@@ -184,6 +235,13 @@ export default function RealtimeChart({
             </div>
           ) : (
             <>
+              {activeTab === "daily-trend" && (
+                <DailyTrendChart
+                  stats={dailyStats.stats}
+                  hourly={dailyStats.hourly}
+                  isLoading={dailyLoading}
+                />
+              )}
               {activeTab === "comparison-temp" && (
                 <ComparisonTemperatureChart data={comparisonData} />
               )}
@@ -191,12 +249,14 @@ export default function RealtimeChart({
                 <ComparisonHumidityChart data={comparisonData} />
               )}
               {!activeTab.startsWith("comparison") &&
+                activeTab !== "daily-trend" &&
                 singleDeviceData.length > 0 && (
                   <DeviceDetailChart data={singleDeviceData} />
                 )}
 
               {/* Empty State */}
               {!activeTab.startsWith("comparison") &&
+                activeTab !== "daily-trend" &&
                 singleDeviceData.length === 0 && (
                   <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg sm:rounded-xl p-4">
                     <Activity className="w-8 h-8 sm:w-10 sm:h-10 mb-2 sm:mb-3 opacity-40" />

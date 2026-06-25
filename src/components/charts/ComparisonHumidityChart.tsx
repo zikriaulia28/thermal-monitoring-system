@@ -26,6 +26,18 @@ interface Props {
 function formatTime(value: string): string {
   const d = new Date(value);
   return d.toLocaleTimeString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function formatWIB(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    day: "2-digit",
+    month: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
   });
@@ -84,7 +96,7 @@ export default function ComparisonHumidityChart({ data }: Props) {
             fontSize: "12px",
             boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
           }}
-          labelFormatter={(value) => formatTime(value)}
+          labelFormatter={(value) => formatWIB(value)}
           formatter={(value: any, name: any) => [`${Number(value).toFixed(2)} %`, name]}
         />
 

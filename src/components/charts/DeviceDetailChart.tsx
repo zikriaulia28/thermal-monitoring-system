@@ -19,6 +19,27 @@ interface Props {
   }[];
 }
 
+const formatWIB = (iso: string) => {
+  const d = new Date(iso);
+  return d.toLocaleTimeString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+const formatWIBFull = (iso: string) => {
+  const d = new Date(iso);
+  return d.toLocaleString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    day: "2-digit",
+    month: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+};
+
 export default function DeviceDetailChart({ data }: Props) {
   if (!data || data.length === 0) {
     return (
@@ -48,13 +69,7 @@ export default function DeviceDetailChart({ data }: Props) {
 
           <XAxis
             dataKey="time"
-            tickFormatter={(value) => {
-              const d = new Date(value);
-              return d.toLocaleTimeString("id-ID", {
-                hour: "2-digit",
-                minute: "2-digit",
-              });
-            }}
+            tickFormatter={formatWIB}
             tick={{ fontSize: 10, fill: "#64748b" }}
             tickLine={false}
             minTickGap={15}
@@ -87,11 +102,12 @@ export default function DeviceDetailChart({ data }: Props) {
               borderRadius: "8px",
               fontSize: "12px",
             }}
+            labelFormatter={(value) => formatWIBFull(value)}
             formatter={(value, name) => {
               if (name === "Temperature") {
-                return [`${value} °C`, name];
+                return [`${Number(value).toFixed(2)} °C`, name];
               }
-              return [`${value} %`, name];
+              return [`${Number(value).toFixed(2)} %`, name];
             }}
           />
 

@@ -1,17 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Wifi, WifiOff, Thermometer, Droplet, AlertCircle } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import {
+  Wifi,
+  WifiOff,
+  Thermometer,
+  Droplet,
+  AlertCircle,
+} from "lucide-react";
 
 import StatCard from "@/components/cards/StatCard";
 import RealtimeChart from "@/components/charts/RealtimeChart";
+import DeviceMetrics from "@/components/charts/DeviceMetrics";
 import EventTable from "@/components/tables/EventTable";
 import TimeRangeFilter from "@/components/filters/TimeRangeFilter";
 
 import { Device } from "@/types/device";
-import { DashboardOverview } from "@/types/dashboard";
+import {
+  DashboardOverview,
+  DeviceDailyStat,
+} from "@/types/dashboard";
 import { TimeRange } from "@/types/filter";
-import { getChartData, getOverview } from "@/services/dashboard.service";
+import { getChartData, getOverview, getDailyStats } from "@/services/dashboard.service";
 
 export default function DashboardPage() {
   const [devices, setDevices] = useState<Device[]>([]);
@@ -22,6 +32,29 @@ export default function DashboardPage() {
   const [customDateFrom, setCustomDateFrom] = useState<Date | null>(null);
   const [customDateTo, setCustomDateTo] = useState<Date | null>(null);
 
+  // ── Daily trend state (independent of dropdown) ──
+  const [dailyStats, setDailyStats] = useState<DeviceDailyStat[]>([]);
+  const [dailyLoading, setDailyLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("daily-trend");
+
+  // Load daily stats on mount once
+  useEffect(() => {
+    const load = async () => {
+      setDailyLoading(true);
+      try {
+        const data = await getDailyStats();
+        setDailyStats(data.stats);
+      } catch {
+        // silent
+      } finally {
+        setDailyLoading(false);
+      }
+    };
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Main data loading (dipengaruhi dropdown)
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -64,6 +97,10 @@ export default function DashboardPage() {
     }
     setIsLoading(true);
   };
+
+  const handleTabChange = useCallback((tab: string) => {
+    setActiveTab(tab);
+  }, []);
 
   const dynamicStats = [
     {
@@ -139,6 +176,17 @@ export default function DashboardPage() {
         ))}
       </div>
 
+      {/* ── DeviceMetrics — hanya muncul saat tab "Harian" aktif ── */}
+      {activeTab === "daily-trend" && dailyStats.length > 0 && (
+        <div className="rounded-xl border bg-white dark:bg-slate-800 shadow-sm p-3 sm:p-4 md:p-5">
+          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+            <span className="w-1.5 h-4 bg-emerald-500 rounded-full" />
+            Ringkasan Harian
+          </h3>
+          <DeviceMetrics stats={dailyStats} isLoading={dailyLoading} />
+        </div>
+      )}
+
       {/* Main Content - Side by side di desktop */}
       <div className="w-full grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
         {/* Chart - Full width di mobile, 2/3 di desktop */}
@@ -147,6 +195,7 @@ export default function DashboardPage() {
             devices={devices}
             isLoading={isLoading}
             timeRange={timeRange}
+            onTabChange={handleTabChange}
           />
         </div>
 

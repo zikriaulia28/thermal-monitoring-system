@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -36,6 +36,27 @@ const HUM_COLORS: Record<string, string> = {
   BATTERY: "#16a34a",
 };
 
+/** Format ISO to "HH:mm" in WIB */
+function fmtTimeWIB(iso: string): string {
+  return new Date(iso).toLocaleTimeString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/** Format ISO to "Kam, 25 Jun, 20:50" in WIB */
+function fmtLabelWIB(iso: string): string {
+  return new Date(iso).toLocaleString("id-ID", {
+    timeZone: "Asia/Jakarta",
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default function EnhancedMonitoringChart({
   temperatureData,
   humidityData,
@@ -50,20 +71,56 @@ export default function EnhancedMonitoringChart({
   const unit = isTemperature ? "°C" : "%";
   const title = isTemperature ? "Temperature Monitoring" : "Humidity Monitoring";
 
-  const keys = chartData.length > 0
-    ? [...new Set(chartData.flatMap((d) => Object.keys(d).filter((k) => k !== "time")))]
-    : [];
+  const keys =
+    chartData.length > 0
+      ? [...new Set(chartData.flatMap((d) => Object.keys(d).filter((k) => k !== "time")))]
+      : [];
+
+  // ── Adaptive Y-axis domain ─────────────────────────────
+  const yDomain = useMemo(() => {
+    if (chartData.length === 0) return isTemperature ? [15, 40] : [0, 100];
+
+    let dataMin = Infinity;
+    let dataMax = -Infinity;
+
+    for (const row of chartData) {
+      for (const key of keys) {
+        const val = row[key] as number | null | undefined;
+        if (val != null) {
+          if (val < dataMin) dataMin = val;
+          if (val > dataMax) dataMax = val;
+        }
+      }
+    }
+
+    if (!isFinite(dataMin) || !isFinite(dataMax)) {
+      return isTemperature ? [15, 40] : [0, 100];
+    }
+
+    const padding = Math.max((dataMax - dataMin) * 0.15, isTemperature ? 2 : 5);
+    return [
+      Math.floor((dataMin - padding) * 10) / 10,
+      Math.ceil((dataMax + padding) * 10) / 10,
+    ];
+  }, [chartData, keys, isTemperature]);
 
   return (
     <div className="rounded-xl border bg-white dark:bg-slate-800 dark:border-slate-700 p-4 sm:p-5 shadow-sm overflow-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-            {title}
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+              {title}
+            </h2>
+            {chartData.length > 0 && (
+              <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium">
+                {chartData.length} titik
+              </span>
+            )}
+          </div>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            {chartData.length} data points · Real-time monitoring
+            Real-time monitoring · rentang {yDomain[0]}–{yDomain[1]} {unit}
           </p>
         </div>
 
@@ -135,7 +192,7 @@ export default function EnhancedMonitoringChart({
                     fillOpacity={0.4}
                   />
                   <ReferenceArea
-                    y1={-10}
+                    y1={yDomain[0]}
                     y2={tempMin}
                     fill="#eff6ff"
                     fillOpacity={0.4}
@@ -153,7 +210,7 @@ export default function EnhancedMonitoringChart({
                     fillOpacity={0.6}
                   />
                   <ReferenceArea
-                    y1={-10}
+                    y1={yDomain[0]}
                     y2={humMin}
                     fill="#fef2f2"
                     fillOpacity={0.4}
@@ -163,16 +220,11 @@ export default function EnhancedMonitoringChart({
 
               <XAxis
                 dataKey="time"
-                tickFormatter={(value) =>
-                  new Date(value).toLocaleTimeString("id-ID", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                }
+                tickFormatter={fmtTimeWIB}
                 tick={{ fontSize: 11, fill: "#64748b" }}
                 tickLine={false}
                 axisLine={{ stroke: "#e2e8f0" }}
-                minTickGap={30}
+                minTickGap={40}
               />
 
               <YAxis
@@ -180,7 +232,7 @@ export default function EnhancedMonitoringChart({
                 tickLine={false}
                 axisLine={false}
                 width={40}
-                domain={isTemperature ? [tempMin - 5, tempMax + 10] : [0, 100]}
+                domain={yDomain}
               />
 
               <Tooltip
@@ -192,15 +244,7 @@ export default function EnhancedMonitoringChart({
                   boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
                   padding: "8px 12px",
                 }}
-                labelFormatter={(value) =>
-                  new Date(value).toLocaleString("id-ID", {
-                    weekday: "short",
-                    day: "2-digit",
-                    month: "short",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })
-                }
+                labelFormatter={(value) => fmtLabelWIB(value)}
                 formatter={(value: any, name: any) => [
                   `${Number(value).toFixed(2)} ${unit}`,
                   name,
@@ -318,14 +362,14 @@ export default function EnhancedMonitoringChart({
             </span>
             <span className="flex items-center gap-1.5 text-xs font-medium">
               <span className="w-3 h-3 rounded-sm bg-amber-50 border border-amber-300" />
-              <span className="text-amber-700">Warning {tempWarning}-{tempMax}°C</span>
+              <span className="text-amber-700">Warning {tempWarning}–{tempMax}°C</span>
             </span>
             <span className="flex items-center gap-1.5 text-xs font-medium">
               <span className="w-3 h-3 rounded-sm bg-blue-50 border border-blue-300" />
               <span className="text-blue-700">Low &lt;{tempMin}°C</span>
             </span>
             <span className="flex items-center gap-1.5 text-xs text-slate-500 font-medium ml-auto">
-              Normal: {tempMin}-{tempWarning}°C
+              Normal: {tempMin}–{tempWarning}°C · Rentang: {yDomain[0]}–{yDomain[1]}°C
             </span>
           </>
         ) : (
@@ -335,7 +379,7 @@ export default function EnhancedMonitoringChart({
               <span className="text-red-700">Critical &gt;{humMax}% or &lt;{humMin}%</span>
             </span>
             <span className="flex items-center gap-1.5 text-xs text-slate-500 font-medium ml-auto">
-              Normal: {humMin}-{humMax}%
+              Normal: {humMin}–{humMax}% · Rentang: {yDomain[0]}–{yDomain[1]}%
             </span>
           </>
         )}
