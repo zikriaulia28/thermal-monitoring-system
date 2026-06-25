@@ -1,7 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getDeviceStatus } from "@/lib/deviceStatus";
-import { aggregateData, formatTimeForRange } from "@/lib/aggregation";
 import { getDateRangeFromFilter, TimeRange } from "@/types/filter";
 
 export const dynamic = "force-dynamic";
@@ -25,13 +24,6 @@ export async function GET(request: Request) {
       from = dateRange.from;
       to = dateRange.to;
     }
-
-    console.log("📊 Chart API:", {
-      range: rangeParam,
-      from: from.toISOString(),
-      to: to.toISOString(),
-      deviceId: deviceIdParam || "all",
-    });
 
     const whereClause: any = {
       logs: {
@@ -72,23 +64,27 @@ export async function GET(request: Request) {
         createdAt: log.createdAt,
       }));
 
-      const aggregatedLogs = aggregateData(rawLogs, rangeParam);
-
       return {
         id: device.deviceId,
         name: `Ruang ${device.location}`,
         location: device.location,
         status: getDeviceStatus(device.lastSeen),
         lastSeen: device.lastSeen,
-        readings: aggregatedLogs.map((log) => ({
-          time: formatTimeForRange(log.createdAt, rangeParam),
+        readings: rawLogs.map((log) => ({
+          time: log.createdAt.toISOString(),
           temperature: log.temperature,
           humidity: log.humidity,
         })),
       };
     });
 
-    return NextResponse.json(result);
+    return NextResponse.json(result, {
+      headers: {
+        "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+      },
+    });
   } catch (error) {
     console.error("GET /api/dashboard/chart error:", error);
 

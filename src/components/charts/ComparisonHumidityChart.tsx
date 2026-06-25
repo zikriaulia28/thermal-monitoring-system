@@ -23,6 +23,14 @@ interface Props {
   }[];
 }
 
+function formatTime(value: string): string {
+  const d = new Date(value);
+  return d.toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default function ComparisonHumidityChart({ data }: Props) {
   const { humMin, humMax } = useThresholds();
 
@@ -58,7 +66,14 @@ export default function ComparisonHumidityChart({ data }: Props) {
           label={{ value: `CRITICAL ${humMin}%`, position: "insideBottomRight", fill: "#dc2626", fontSize: 10, fontWeight: "bold" }}
         />
 
-        <XAxis dataKey="time" minTickGap={15} tick={{ fontSize: 10, fill: "#64748b" }} tickLine={false} />
+        <XAxis
+          dataKey="time"
+          tickFormatter={formatTime}
+          minTickGap={15}
+          tick={{ fontSize: 10, fill: "#64748b" }}
+          tickLine={false}
+        />
+
         <YAxis unit="%" domain={[0, 100]} tick={{ fontSize: 10, fill: "#64748b" }} tickLine={false} width={35} />
 
         <Tooltip
@@ -69,6 +84,7 @@ export default function ComparisonHumidityChart({ data }: Props) {
             fontSize: "12px",
             boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
           }}
+          labelFormatter={(value) => formatTime(value)}
           formatter={(value: any, name: any) => [`${Number(value).toFixed(2)} %`, name]}
         />
 

@@ -2,6 +2,7 @@
 
 import StatusBadge from "@/components/ui/StatusBadge";
 import { Device } from "@/types/device";
+import { formatWIB } from "@/lib/formatWIB";
 
 interface EventTableProps {
   devices: Device[];
@@ -60,8 +61,8 @@ export default function EventTable({ devices, isLoading = false }: EventTablePro
                       <StatusBadge status={device.status} />
                     </td>
 
-                    <td className="py-3.5 text-right font-mono text-gray-600">
-                      {latestReading?.time ?? "--:--"}
+                    <td className="py-3.5 text-right font-mono text-gray-600 text-xs whitespace-nowrap">
+                      {formatWIB(latestReading?.time, "medium")}
                     </td>
                   </tr>
                 );

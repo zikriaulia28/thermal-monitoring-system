@@ -27,7 +27,12 @@ export default function DashboardPage() {
       try {
         setError(null);
         const [chartData, overviewData] = await Promise.all([
-          getChartData(timeRange, undefined, customDateFrom || undefined, customDateTo || undefined),
+          getChartData(
+            timeRange,
+            undefined,
+            customDateFrom || undefined,
+            customDateTo || undefined,
+          ),
           getOverview(),
         ]);
         setDevices(chartData);
@@ -47,7 +52,11 @@ export default function DashboardPage() {
     return () => clearInterval(interval);
   }, [timeRange, customDateFrom, customDateTo]);
 
-  const handleTimeRangeChange = (newRange: TimeRange, customFrom?: Date, customTo?: Date) => {
+  const handleTimeRangeChange = (
+    newRange: TimeRange,
+    customFrom?: Date,
+    customTo?: Date,
+  ) => {
     setTimeRange(newRange);
     if (customFrom && customTo) {
       setCustomDateFrom(customFrom);
@@ -67,7 +76,10 @@ export default function DashboardPage() {
       title: "Device Offline",
       value: isLoading ? "..." : `${overview?.offline ?? 0}`,
       icon: WifiOff,
-      status: overview?.offline && overview.offline > 0 ? "offline" as const : undefined,
+      status:
+        overview?.offline && overview.offline > 0
+          ? ("offline" as const)
+          : undefined,
     },
     {
       title: "Temperature Average",
@@ -131,7 +143,11 @@ export default function DashboardPage() {
       <div className="w-full grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
         {/* Chart - Full width di mobile, 2/3 di desktop */}
         <div className="w-full xl:col-span-2">
-          <RealtimeChart devices={devices} isLoading={isLoading} timeRange={timeRange} />
+          <RealtimeChart
+            devices={devices}
+            isLoading={isLoading}
+            timeRange={timeRange}
+          />
         </div>
 
         {/* Event Table - Full width di mobile, 1/3 di desktop */}

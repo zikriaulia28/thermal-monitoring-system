@@ -19,7 +19,11 @@ interface RealtimeChartProps {
   timeRange?: TimeRange;
 }
 
-export default function RealtimeChart({ devices, isLoading = false, timeRange = "realtime" }: RealtimeChartProps) {
+export default function RealtimeChart({
+  devices,
+  isLoading = false,
+  timeRange = "realtime",
+}: RealtimeChartProps) {
   const [activeTab, setActiveTab] = useState("comparison-temp");
 
   const pdbDevice = getDeviceByLocation(devices, "PDB");
@@ -34,7 +38,9 @@ export default function RealtimeChart({ devices, isLoading = false, timeRange = 
   const currentSingleDevice = devices.find((device) => device.id === activeTab);
   const singleDeviceData = currentSingleDevice?.readings ?? [];
 
-  const timeRangeLabel = TIME_RANGE_OPTIONS.find((opt) => opt.value === timeRange)?.description || "Last 60 minutes";
+  const timeRangeLabel =
+    TIME_RANGE_OPTIONS.find((opt) => opt.value === timeRange)?.description ||
+    "Last 60 minutes";
 
   const getContextInfo = () => {
     if (activeTab === "comparison-temp") {
@@ -99,41 +105,41 @@ export default function RealtimeChart({ devices, isLoading = false, timeRange = 
             </span>
           </div>
         </div>
-
-        {/* Tabs Navigation */}
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="relative -mx-3 sm:-mx-4 md:-mx-5 px-3 sm:px-4 md:px-5">
-            <TabsList className="w-full justify-start overflow-x-auto bg-slate-100 dark:bg-slate-900 p-1 rounded-lg gap-1 scrollbar-hide flex-nowrap">
-              <TabsTrigger
-                value="comparison-temp"
-                className="flex-shrink-0 whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 shadow-sm px-3 py-1.5 text-xs sm:text-sm"
-              >
-                🌡️ Suhu
-              </TabsTrigger>
-              <TabsTrigger
-                value="comparison-hum"
-                className="flex-shrink-0 whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 shadow-sm px-3 py-1.5 text-xs sm:text-sm"
-              >
-                💧 Humidity
-              </TabsTrigger>
-              {devices.map((device) => (
-                <TabsTrigger
-                  key={device.id}
-                  value={device.id}
-                  className="flex-shrink-0 whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 shadow-sm px-2.5 py-1.5 text-xs sm:text-sm"
-                >
-                  📍 {device.location}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </div>
-        </Tabs>
       </div>
 
       {/* Metrics Section */}
       <div className="p-3 sm:p-4 md:p-5 pt-2 sm:pt-3 md:pt-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-900/30">
         <DeviceMetrics devices={devices} />
       </div>
+
+      {/* Tabs Navigation */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="relative -mx-3 sm:-mx-4 md:-mx-5 px-3 sm:px-4 md:px-5">
+          <TabsList className="w-full justify-start overflow-x-auto bg-slate-100 dark:bg-slate-900 p-1 rounded-lg gap-1 scrollbar-hide flex-nowrap">
+            <TabsTrigger
+              value="comparison-temp"
+              className="flex-shrink-0 whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 shadow-sm px-3 py-1.5 text-xs sm:text-sm"
+            >
+              🌡️ Suhu
+            </TabsTrigger>
+            <TabsTrigger
+              value="comparison-hum"
+              className="flex-shrink-0 whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 shadow-sm px-3 py-1.5 text-xs sm:text-sm"
+            >
+              💧 Humidity
+            </TabsTrigger>
+            {devices.map((device) => (
+              <TabsTrigger
+                key={device.id}
+                value={device.id}
+                className="flex-shrink-0 whitespace-nowrap data-[state=active]:bg-white dark:data-[state=active]:bg-slate-800 shadow-sm px-2.5 py-1.5 text-xs sm:text-sm"
+              >
+                📍 {device.location}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </div>
+      </Tabs>
 
       {/* Chart Context & Visualization */}
       <div className="p-3 sm:p-4 md:p-5">
@@ -165,7 +171,10 @@ export default function RealtimeChart({ devices, isLoading = false, timeRange = 
         </div>
 
         {/* Chart Container */}
-        <div className="w-full h-[280px] sm:h-[320px] md:h-[380px] lg:h-[420px] rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-2 sm:p-3 shadow-inner relative" style={{ minWidth: 0, minHeight: 0 }}>
+        <div
+          className="w-full h-[280px] sm:h-[320px] md:h-[380px] lg:h-[420px] rounded-lg sm:rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 p-2 sm:p-3 shadow-inner relative"
+          style={{ minWidth: 0, minHeight: 0 }}
+        >
           {isLoading ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-lg sm:rounded-xl p-4">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mb-3" />

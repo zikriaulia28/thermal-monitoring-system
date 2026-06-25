@@ -23,6 +23,14 @@ interface Props {
   }[];
 }
 
+function formatTime(value: string): string {
+  const d = new Date(value);
+  return d.toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default function ComparisonTemperatureChart({ data }: Props) {
   const { tempMin, tempMax, tempWarning } = useThresholds();
 
@@ -68,6 +76,7 @@ export default function ComparisonTemperatureChart({ data }: Props) {
 
         <XAxis
           dataKey="time"
+          tickFormatter={formatTime}
           minTickGap={15}
           tick={{ fontSize: 10, fill: "#64748b" }}
           tickLine={false}
@@ -89,6 +98,7 @@ export default function ComparisonTemperatureChart({ data }: Props) {
             fontSize: "12px",
             boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
           }}
+          labelFormatter={(value) => formatTime(value)}
           formatter={(value: any, name: any) => [`${Number(value).toFixed(2)} °C`, name]}
         />
 

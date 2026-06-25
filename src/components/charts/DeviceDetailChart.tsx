@@ -48,6 +48,13 @@ export default function DeviceDetailChart({ data }: Props) {
 
           <XAxis
             dataKey="time"
+            tickFormatter={(value) => {
+              const d = new Date(value);
+              return d.toLocaleTimeString("id-ID", {
+                hour: "2-digit",
+                minute: "2-digit",
+              });
+            }}
             tick={{ fontSize: 10, fill: "#64748b" }}
             tickLine={false}
             minTickGap={15}
