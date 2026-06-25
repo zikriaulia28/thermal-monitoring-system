@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
 import { Settings as SettingsType, DEFAULT_SETTINGS } from "@/types/settings";
-import { Loader2, RotateCcw, Save, Thermometer, Droplets, Database, Clock, Shield, X, Lock } from "lucide-react";
+import { Loader2, RotateCcw, Save, Thermometer, Droplets, Database, Clock, Shield, X, Lock, ArrowLeft } from "lucide-react";
 import { Toast } from "@/components/ui/Toast";
 import { checkAdminAccess, verifyAdminKey, grantAdminAccess } from "@/lib/adminAccess";
+import Link from "next/link";
 
 export default function SettingsPage() {
   const { settings, isLoading } = useSettings();
@@ -79,6 +80,13 @@ export default function SettingsPage() {
             >
               Buka Settings
             </button>
+            <Link
+              href="/dashboard"
+              className="w-full py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition active:scale-95 text-center flex items-center justify-center gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Kembali ke Dashboard
+            </Link>
           </div>
           <p className="text-xs text-slate-400 dark:text-slate-500 text-center mt-4">
             Hubungi engineer untuk mendapatkan kunci akses

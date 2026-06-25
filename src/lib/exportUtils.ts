@@ -14,6 +14,34 @@ export interface ReportRow {
 }
 
 /**
+ * Format period string from filename like "summary-report-2026-06-18-2026-06-25"
+ * into readable format: "18 Jun 2026 — 25 Jun 2026"
+ */
+function formatPeriod(filename: string): string {
+  const suffix = filename.split("report-")[1]; // "2026-06-18-2026-06-25"
+  if (!suffix) return "-";
+
+  // Match two ISO dates: YYYY-MM-DD and YYYY-MM-DD
+  const match = suffix.match(/(\d{4}-\d{2}-\d{2})-?(\d{4}-\d{2}-\d{2})?$/);
+  if (!match) return suffix.replace(/-/g, "/");
+
+  const formatDate = (iso: string) => {
+    const [y, m, d] = iso.split("-");
+    const months = [
+      "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
+      "Jul", "Agu", "Sep", "Okt", "Nov", "Des",
+    ];
+    return `${Number(d)} ${months[Number(m) - 1]} ${y}`;
+  };
+
+  const start = formatDate(match[1]);
+  const end = match[2] ? formatDate(match[2]) : start;
+
+  if (match[1] === match[2]) return start;
+  return `${start} — ${end}`;
+}
+
+/**
  * Export data to CSV file with custom column labels
  */
 export function exportToCSV(
@@ -78,7 +106,7 @@ export function exportToPDF(
   doc.setFontSize(10);
   doc.setFont("helvetica", "normal");
   doc.text(`Generated: ${new Date().toLocaleString("id-ID", { timeZone: "Asia/Jakarta" })} WIB`, 14, 22);
-  doc.text(`Period: ${filename.split("report-")[1]?.replace(/-/g, "/") || "-"}`, 14, 28);
+  doc.text(`Period: ${formatPeriod(filename)}`, 14, 28);
 
   // Use columnLabels if provided, otherwise use columns
   const headers = columnLabels || columns.map(col => 
