@@ -97,7 +97,7 @@ export default function ComparisonHumidityChart({ data }: Props) {
             boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
           }}
           labelFormatter={(value) => formatWIB(value)}
-          formatter={(value: number | string, name: string) => [`${Number(value).toFixed(2)} %`, name]}
+          formatter={(value, name) => [`${Number(value ?? 0).toFixed(2)} %`, name]}
         />
 
         <Legend wrapperStyle={{ fontSize: 11, paddingTop: "10px" }} iconType="circle" iconSize={8} />

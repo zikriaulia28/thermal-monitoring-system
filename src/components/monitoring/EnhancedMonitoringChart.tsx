@@ -254,8 +254,8 @@ export default function EnhancedMonitoringChart({
                   padding: "8px 12px",
                 }}
                 labelFormatter={(value) => fmtLabelWIB(value)}
-                formatter={(value: number | string, name: string) => [
-                  `${Number(value).toFixed(2)} ${unit}`,
+                formatter={(value, name) => [
+                  `${Number(value ?? 0).toFixed(2)} ${unit}`,
                   name,
                 ]}
               />

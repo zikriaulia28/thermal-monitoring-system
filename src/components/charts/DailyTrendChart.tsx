@@ -343,7 +343,7 @@ export default function DailyTrendChart({
   }
 
   // Get unique deviceIds in defined order
-  const deviceIds = DEVICE_ORDER.filter((loc) =>
+  const deviceIds: string[] = DEVICE_ORDER.filter((loc) =>
     stats.some((s) => s.location === loc),
   );
   // Add any remaining devices not in DEVICE_ORDER

@@ -31,7 +31,19 @@ export function useReportData(params: ReportParams) {
 
   const url = getReportEndpoint(params.type, queryString);
 
-  const { data, error, isLoading, mutate } = useSWR<{ success: boolean; data: Array<{ id?: string; time?: string; [key: string]: unknown }>; summary: { totalRecords: number; period: string; devices: number } }>(
+  const { data, error, isLoading, mutate } = useSWR<{
+    success: boolean;
+    data: Array<{ id?: string; time?: string; [key: string]: unknown }>;
+    summary: {
+      totalRecords: number;
+      period: string;
+      devices: number;
+      critical?: number;
+      warning?: number;
+      pending?: number;
+      [key: string]: unknown;
+    };
+  }>(
     url,
     reportFetcher,
     { revalidateOnFocus: false }
