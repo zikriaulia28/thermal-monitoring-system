@@ -1,11 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
 import { Settings as SettingsType, DEFAULT_SETTINGS } from "@/types/settings";
-import { Loader2, RotateCcw, Save, Thermometer, Droplets, Database, Clock, Shield, X, Lock, ArrowLeft } from "lucide-react";
+import {
+  Loader2,
+  RotateCcw,
+  Save,
+  Thermometer,
+  Droplets,
+  Database,
+  Clock,
+  Shield,
+  X,
+  Lock,
+  ArrowLeft,
+} from "lucide-react";
 import { Toast } from "@/components/ui/Toast";
-import { checkAdminAccess, verifyAdminKey, grantAdminAccess } from "@/lib/adminAccess";
+import {
+  checkAdminAccess,
+  verifyAdminKey,
+  verifyServerSession,
+} from "@/lib/adminAccess";
 import Link from "next/link";
 
 export default function SettingsPage() {
@@ -13,17 +29,38 @@ export default function SettingsPage() {
   const { updateSettings } = useUpdateSettings();
 
   const [isAuthorized, setIsAuthorized] = useState(false);
+  const [isChecking, setIsChecking] = useState(true);
   const [keyInput, setKeyInput] = useState("");
   const [keyError, setKeyError] = useState("");
+  const [rateLimitInfo, setRateLimitInfo] = useState<string>("");
+  const [cooldownRemaining, setCooldownRemaining] = useState(0);
   const [formData, setFormData] = useState<Partial<SettingsType>>({});
-  const [toast, setToast] = useState<{ type: "success" | "error" | "warning"; message: string } | null>(null);
+  const formDataRef = useRef(formData);
+  const [toast, setToast] = useState<{
+    type: "success" | "error" | "warning";
+    message: string;
+  } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // ── Dual Validation: localStorage + Server ──────────────
   useEffect(() => {
-    if (checkAdminAccess()) {
-      setIsAuthorized(true);
-    }
+    const validateAccess = async () => {
+      // Step 1: Check localStorage (cepat, client-side)
+      if (checkAdminAccess()) {
+        // Step 2: Verify server-side session (httpOnly cookie valid)
+        const serverValid = await verifyServerSession();
+        if (serverValid) {
+          setIsAuthorized(true);
+        } else {
+          // localStorage ada tapi server session expired/tidak valid
+          // Bersihkan localStorage stale
+          localStorage.removeItem("cpems_admin");
+        }
+      }
+      setIsChecking(false);
+    };
+    validateAccess();
   }, []);
 
   useEffect(() => {
@@ -32,16 +69,61 @@ export default function SettingsPage() {
     }
   }, [settings]);
 
+  // ── Cooldown Timer ──────────────────────────────────────
+  useEffect(() => {
+    if (cooldownRemaining <= 0) return;
+    const timer = setInterval(() => {
+      setCooldownRemaining((prev) => {
+        if (prev <= 1) {
+          setRateLimitInfo("");
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldownRemaining]);
+
+  // ── Handle Password Submit ──────────────────────────────
   const handleKeySubmit = async () => {
-    const isValid = await verifyAdminKey(keyInput);
-    if (isValid) {
-      setIsAuthorized(true);
-      setKeyError("");
-    } else {
-      setKeyError("Kunci akses salah. Silakan coba lagi.");
+    setKeyError("");
+    setRateLimitInfo("");
+
+    try {
+      const isValid = await verifyAdminKey(keyInput);
+      if (isValid) {
+        setIsAuthorized(true);
+        setKeyError("");
+      } else {
+        setKeyError("Password salah. Silakan coba lagi.");
+      }
+    } catch (error) {
+      // Rate limit error
+      if (error instanceof Error && error.message.includes("Terlalu banyak")) {
+        setRateLimitInfo(error.message);
+        setCooldownRemaining(900); // 15 menit default countdown
+      } else {
+        setKeyError("Terjadi kesalahan. Silakan coba lagi.");
+      }
     }
   };
 
+  // ── Loading Screen (checking session) ───────────────────
+  if (isChecking) {
+    return (
+      <div className="space-y-6">
+        <div className="mb-6">
+          <div className="h-8 w-40 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mb-2" />
+          <div className="h-4 w-60 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+        </div>
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+        </div>
+      </div>
+    );
+  }
+
+  // ── Auth Gate: Tampilkan form password ──────────────────
   if (!isAuthorized) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-50 dark:bg-slate-950">
@@ -50,8 +132,12 @@ export default function SettingsPage() {
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
               <Shield className="w-8 h-8 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Admin Access</h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Masukkan kunci akses untuk membuka Settings</p>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+              Admin Access
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+              Masukkan password untuk membuka Settings
+            </p>
           </div>
           <div className="space-y-4">
             <div>
@@ -60,11 +146,18 @@ export default function SettingsPage() {
                 <input
                   type="password"
                   value={keyInput}
-                  onChange={(e) => { setKeyInput(e.target.value); setKeyError(""); }}
-                  onKeyDown={(e) => e.key === "Enter" && handleKeySubmit()}
-                  placeholder="Masukkan kunci akses..."
-                  className="w-full pl-10 pr-4 py-3 text-sm border border-slate-300 dark:border-slate-600 rounded-xl dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition"
-                  autoFocus
+                  onChange={(e) => {
+                    setKeyInput(e.target.value);
+                    setKeyError("");
+                    setRateLimitInfo("");
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !rateLimitInfo) handleKeySubmit();
+                  }}
+                  placeholder="Masukkan password admin..."
+                  disabled={!!rateLimitInfo}
+                  className="w-full pl-10 pr-4 py-3 text-sm border border-slate-300 dark:border-slate-600 rounded-xl dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  autoFocus={!rateLimitInfo}
                 />
               </div>
               {keyError && (
@@ -72,10 +165,24 @@ export default function SettingsPage() {
                   <X className="w-3 h-3" /> {keyError}
                 </p>
               )}
+              {rateLimitInfo && (
+                <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                  <p className="text-xs text-red-700 dark:text-red-400 flex items-center gap-1">
+                    <Shield className="w-3 h-3" />
+                    {rateLimitInfo}
+                  </p>
+                  {cooldownRemaining > 0 && (
+                    <p className="text-xs text-red-500 dark:text-red-300 mt-1 ml-4">
+                      Tunggu {Math.floor(cooldownRemaining / 60)}:
+                      {String(cooldownRemaining % 60).padStart(2, "0")}
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
             <button
               onClick={handleKeySubmit}
-              disabled={!keyInput}
+              disabled={!keyInput || !!rateLimitInfo}
               className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition active:scale-95 shadow-lg"
             >
               Buka Settings
@@ -89,13 +196,14 @@ export default function SettingsPage() {
             </Link>
           </div>
           <p className="text-xs text-slate-400 dark:text-slate-500 text-center mt-4">
-            Hubungi engineer untuk mendapatkan kunci akses
+            Hubungi engineer untuk mendapatkan password admin
           </p>
         </div>
       </div>
     );
   }
 
+  // ── Validation ──────────────────────────────────────────
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
     const tempMin = Number(formData.thresholdTempMin);
@@ -132,9 +240,10 @@ export default function SettingsPage() {
     if (value === "") {
       setFormData((prev) => ({ ...prev, [name]: "" }));
     } else {
-      const parsed = name.includes("Retention") || name.includes("Interval")
-        ? parseInt(value, 10)
-        : parseFloat(value);
+      const parsed =
+        name.includes("Retention") || name.includes("Interval")
+          ? parseInt(value, 10)
+          : parseFloat(value);
       setFormData((prev) => ({ ...prev, [name]: isNaN(parsed) ? "" : parsed }));
     }
     if (errors[name]) {
@@ -144,15 +253,21 @@ export default function SettingsPage() {
 
   const handleSave = async () => {
     if (!validate()) {
-      setToast({ type: "warning", message: "Please fix validation errors before saving" });
+      setToast({
+        type: "warning",
+        message: "Perbaiki kesalahan validasi sebelum menyimpan",
+      });
       return;
     }
     setIsSaving(true);
     try {
       await updateSettings(formData);
-      setToast({ type: "success", message: "Settings updated successfully!" });
+      setToast({ type: "success", message: "Settings berhasil disimpan!" });
     } catch {
-      setToast({ type: "error", message: "Failed to update settings. Please try again." });
+      setToast({
+        type: "error",
+        message: "Gagal menyimpan settings. Silakan coba lagi.",
+      });
     } finally {
       setIsSaving(false);
     }
@@ -161,9 +276,10 @@ export default function SettingsPage() {
   const handleReset = () => {
     setFormData(DEFAULT_SETTINGS);
     setErrors({});
-    setToast({ type: "success", message: "Settings reset to default values" });
+    setToast({ type: "success", message: "Settings di-reset ke default" });
   };
 
+  // ── Loading ─────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -181,79 +297,184 @@ export default function SettingsPage() {
     );
   }
 
+  // ── Settings Form ───────────────────────────────────────
   return (
     <div className="space-y-6">
       {toast && (
-        <Toast type={toast.type} message={toast.message} onClose={() => setToast(null)} duration={3000} />
+        <Toast
+          type={toast.type}
+          message={toast.message}
+          onClose={() => setToast(null)}
+          duration={3000}
+        />
       )}
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">Settings</h1>
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
+            Settings
+          </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
             Configure system thresholds and monitoring preferences
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={handleReset} className="flex items-center gap-2 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-medium rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition active:scale-95">
+          <button
+            onClick={handleReset}
+            className="flex items-center gap-2 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-medium rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition active:scale-95"
+          >
             <RotateCcw className="w-4 h-4" />
             <span className="hidden sm:inline">Reset Default</span>
           </button>
-          <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition active:scale-95">
-            {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+          <button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition active:scale-95"
+          >
+            {isSaving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
             {isSaving ? "Saving..." : "Save Settings"}
           </button>
         </div>
       </div>
 
       <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 sm:p-5">
-        <h2 className="text-sm font-semibold text-blue-800 dark:text-blue-400 mb-3">Current Threshold Summary</h2>
+        <h2 className="text-sm font-semibold text-blue-800 dark:text-blue-400 mb-3">
+          Current Threshold Summary
+        </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          <SummaryItem label="Temperature Range" value={`${formData.thresholdTempMin ?? "-"}°C - ${formData.thresholdTempMax ?? "-"}°C`} icon={<Thermometer className="w-4 h-4 text-red-500" />} />
-          <SummaryItem label="Humidity Range" value={`${formData.thresholdHumidityMin ?? "-"}% - ${formData.thresholdHumidityMax ?? "-"}%`} icon={<Droplets className="w-4 h-4 text-blue-500" />} />
-          <SummaryItem label="Data Retention" value={`${formData.dataRetentionDays ?? "-"} days`} icon={<Database className="w-4 h-4 text-purple-500" />} />
-          <SummaryItem label="Auto-refresh" value={`Every ${formData.monitoringIntervalSeconds ?? "-"}s`} icon={<Clock className="w-4 h-4 text-amber-500" />} />
+          <SummaryItem
+            label="Temperature Range"
+            value={`${formData.thresholdTempMin ?? "-"}°C - ${formData.thresholdTempMax ?? "-"}°C`}
+            icon={<Thermometer className="w-4 h-4 text-red-500" />}
+          />
+          <SummaryItem
+            label="Humidity Range"
+            value={`${formData.thresholdHumidityMin ?? "-"}% - ${formData.thresholdHumidityMax ?? "-"}%`}
+            icon={<Droplets className="w-4 h-4 text-blue-500" />}
+          />
+          <SummaryItem
+            label="Data Retention"
+            value={`${formData.dataRetentionDays ?? "-"} days`}
+            icon={<Database className="w-4 h-4 text-purple-500" />}
+          />
+          <SummaryItem
+            label="Auto-refresh"
+            value={`Every ${formData.monitoringIntervalSeconds ?? "-"}s`}
+            icon={<Clock className="w-4 h-4 text-amber-500" />}
+          />
         </div>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
           <h2 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-            <Thermometer className="w-5 h-5 text-red-500" /> Temperature & Humidity Thresholds
+            <Thermometer className="w-5 h-5 text-red-500" /> Temperature &
+            Humidity Thresholds
           </h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Temperature Range (°C)</label>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                Temperature Range (°C)
+              </label>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <input type="number" step="0.1" name="thresholdTempMin" value={formData.thresholdTempMin ?? ""} onChange={handleChange} className={`w-full px-3 py-2 text-sm border rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.thresholdTempMin ? "border-red-300 bg-red-50" : "border-slate-300 dark:border-slate-600"}`} />
+                  <input
+                    type="number"
+                    step="0.1"
+                    name="thresholdTempMin"
+                    value={formData.thresholdTempMin ?? ""}
+                    onChange={handleChange}
+                    className={`w-full px-3 py-2 text-sm border rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition ${
+                      errors.thresholdTempMin
+                        ? "border-red-300 bg-red-50"
+                        : "border-slate-300 dark:border-slate-600"
+                    }`}
+                  />
                   <p className="text-xs text-slate-500 mt-1">Min</p>
-                  {errors.thresholdTempMin && <p className="text-xs text-red-600 mt-0.5">{errors.thresholdTempMin}</p>}
+                  {errors.thresholdTempMin && (
+                    <p className="text-xs text-red-600 mt-0.5">
+                      {errors.thresholdTempMin}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <input type="number" step="0.1" name="thresholdTempMax" value={formData.thresholdTempMax ?? ""} onChange={handleChange} className={`w-full px-3 py-2 text-sm border rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.thresholdTempMax ? "border-red-300 bg-red-50" : "border-slate-300 dark:border-slate-600"}`} />
+                  <input
+                    type="number"
+                    step="0.1"
+                    name="thresholdTempMax"
+                    value={formData.thresholdTempMax ?? ""}
+                    onChange={handleChange}
+                    className={`w-full px-3 py-2 text-sm border rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition ${
+                      errors.thresholdTempMax
+                        ? "border-red-300 bg-red-50"
+                        : "border-slate-300 dark:border-slate-600"
+                    }`}
+                  />
                   <p className="text-xs text-slate-500 mt-1">Max</p>
-                  {errors.thresholdTempMax && <p className="text-xs text-red-600 mt-0.5">{errors.thresholdTempMax}</p>}
+                  {errors.thresholdTempMax && (
+                    <p className="text-xs text-red-600 mt-0.5">
+                      {errors.thresholdTempMax}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Humidity Range (%)</label>
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                Humidity Range (%)
+              </label>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <input type="number" step="1" name="thresholdHumidityMin" value={formData.thresholdHumidityMin ?? ""} onChange={handleChange} className={`w-full px-3 py-2 text-sm border rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.thresholdHumidityMin ? "border-red-300 bg-red-50" : "border-slate-300 dark:border-slate-600"}`} />
+                  <input
+                    type="number"
+                    step="1"
+                    name="thresholdHumidityMin"
+                    value={formData.thresholdHumidityMin ?? ""}
+                    onChange={handleChange}
+                    className={`w-full px-3 py-2 text-sm border rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition ${
+                      errors.thresholdHumidityMin
+                        ? "border-red-300 bg-red-50"
+                        : "border-slate-300 dark:border-slate-600"
+                    }`}
+                  />
                   <p className="text-xs text-slate-500 mt-1">Min</p>
-                  {errors.thresholdHumidityMin && <p className="text-xs text-red-600 mt-0.5">{errors.thresholdHumidityMin}</p>}
+                  {errors.thresholdHumidityMin && (
+                    <p className="text-xs text-red-600 mt-0.5">
+                      {errors.thresholdHumidityMin}
+                    </p>
+                  )}
                 </div>
                 <div>
-                  <input type="number" step="1" name="thresholdHumidityMax" value={formData.thresholdHumidityMax ?? ""} onChange={handleChange} className={`w-full px-3 py-2 text-sm border rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.thresholdHumidityMax ? "border-red-300 bg-red-50" : "border-slate-300 dark:border-slate-600"}`} />
+                  <input
+                    type="number"
+                    step="1"
+                    name="thresholdHumidityMax"
+                    value={formData.thresholdHumidityMax ?? ""}
+                    onChange={handleChange}
+                    className={`w-full px-3 py-2 text-sm border rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition ${
+                      errors.thresholdHumidityMax
+                        ? "border-red-300 bg-red-50"
+                        : "border-slate-300 dark:border-slate-600"
+                    }`}
+                  />
                   <p className="text-xs text-slate-500 mt-1">Max</p>
-                  {errors.thresholdHumidityMax && <p className="text-xs text-red-600 mt-0.5">{errors.thresholdHumidityMax}</p>}
+                  {errors.thresholdHumidityMax && (
+                    <p className="text-xs text-red-600 mt-0.5">
+                      {errors.thresholdHumidityMax}
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
             <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-              <span className="text-xs text-amber-800 dark:text-amber-400">⚠️ Changes to thresholds will affect chart reference lines and alert triggers</span>
+              <span className="text-xs text-amber-800 dark:text-amber-400">
+                ⚠️ Changes to thresholds will affect chart reference lines and
+                alert triggers
+              </span>
             </div>
           </div>
         </div>
@@ -264,12 +485,39 @@ export default function SettingsPage() {
           </h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Days to Keep Historical Data</label>
-              <input type="number" min="7" max="365" step="1" name="dataRetentionDays" value={formData.dataRetentionDays ?? ""} onChange={handleChange} className={`w-full px-3 py-2 text-sm border rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.dataRetentionDays ? "border-red-300 bg-red-50" : "border-slate-300 dark:border-slate-600"}`} />
-              {errors.dataRetentionDays ? <p className="text-xs text-red-600 mt-1">{errors.dataRetentionDays}</p> : <p className="text-xs text-slate-500 mt-1">Data older than this will be automatically cleaned (7-365 days)</p>}
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                Days to Keep Historical Data
+              </label>
+              <input
+                type="number"
+                min="7"
+                max="365"
+                step="1"
+                name="dataRetentionDays"
+                value={formData.dataRetentionDays ?? ""}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 text-sm border rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition ${
+                  errors.dataRetentionDays
+                    ? "border-red-300 bg-red-50"
+                    : "border-slate-300 dark:border-slate-600"
+                }`}
+              />
+              {errors.dataRetentionDays ? (
+                <p className="text-xs text-red-600 mt-1">
+                  {errors.dataRetentionDays}
+                </p>
+              ) : (
+                <p className="text-xs text-slate-500 mt-1">
+                  Data older than this will be automatically cleaned (7-365
+                  days)
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <span className="text-xs text-blue-800 dark:text-blue-400">ℹ️ Currently set to keep {formData.dataRetentionDays ?? 90} days of data</span>
+              <span className="text-xs text-blue-800 dark:text-blue-400">
+                ℹ️ Currently set to keep {formData.dataRetentionDays ?? 90}{" "}
+                days of data
+              </span>
             </div>
           </div>
         </div>
@@ -280,12 +528,39 @@ export default function SettingsPage() {
           </h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">Refresh Interval (seconds)</label>
-              <input type="number" min="5" max="3600" step="5" name="monitoringIntervalSeconds" value={formData.monitoringIntervalSeconds ?? ""} onChange={handleChange} className={`w-full px-3 py-2 text-sm border rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition ${errors.monitoringIntervalSeconds ? "border-red-300 bg-red-50" : "border-slate-300 dark:border-slate-600"}`} />
-              {errors.monitoringIntervalSeconds ? <p className="text-xs text-red-600 mt-1">{errors.monitoringIntervalSeconds}</p> : <p className="text-xs text-slate-500 mt-1">Dashboard and monitoring pages will refresh every {formData.monitoringIntervalSeconds ?? 5} seconds</p>}
+              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+                Refresh Interval (seconds)
+              </label>
+              <input
+                type="number"
+                min="5"
+                max="3600"
+                step="5"
+                name="monitoringIntervalSeconds"
+                value={formData.monitoringIntervalSeconds ?? ""}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 text-sm border rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition ${
+                  errors.monitoringIntervalSeconds
+                    ? "border-red-300 bg-red-50"
+                    : "border-slate-300 dark:border-slate-600"
+                }`}
+              />
+              {errors.monitoringIntervalSeconds ? (
+                <p className="text-xs text-red-600 mt-1">
+                  {errors.monitoringIntervalSeconds}
+                </p>
+              ) : (
+                <p className="text-xs text-slate-500 mt-1">
+                  Dashboard and monitoring pages will refresh every{" "}
+                  {formData.monitoringIntervalSeconds ?? 5} seconds
+                </p>
+              )}
             </div>
             <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-              <span className="text-xs text-green-800 dark:text-green-400">✓ Current refresh interval: {formData.monitoringIntervalSeconds ?? 5}s</span>
+              <span className="text-xs text-green-800 dark:text-green-400">
+                ✓ Current refresh interval:{" "}
+                {formData.monitoringIntervalSeconds ?? 5}s
+              </span>
             </div>
           </div>
         </div>
@@ -294,13 +569,25 @@ export default function SettingsPage() {
   );
 }
 
-function SummaryItem({ label, value, icon }: { label: string; value: string; icon: React.ReactNode }) {
+function SummaryItem({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string;
+  icon: React.ReactNode;
+}) {
   return (
     <div className="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 rounded-lg border border-blue-100 dark:border-blue-900">
       {icon}
       <div className="min-w-0">
-        <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">{label}</p>
-        <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{value}</p>
+        <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">
+          {label}
+        </p>
+        <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+          {value}
+        </p>
       </div>
     </div>
   );
