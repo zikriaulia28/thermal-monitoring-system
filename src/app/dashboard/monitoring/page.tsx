@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 import MonitoringHeader from "@/components/monitoring/MonitoringHeader";
 import EnhancedMonitoringChart from "@/components/monitoring/EnhancedMonitoringChart";
@@ -15,43 +15,54 @@ export default function MonitoringPage() {
   const [devices, setDevices] = useState<Device[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<MonitoringTimeRange>("1h");
-  const mountedRef = useRef(true);
 
   const fetchData = useCallback(async (range: MonitoringTimeRange) => {
     try {
       const data = await getMonitoringData(range);
-      if (mountedRef.current) {
-        setDevices(data);
-        setIsLoading(false);
-      }
+      setDevices(data);
+      setIsLoading(false);
     } catch (err) {
       console.error("Monitoring fetch error:", err);
-      if (mountedRef.current) {
-        setDevices([]);
-        setIsLoading(false);
-      }
+      setDevices([]);
+      setIsLoading(false);
     }
   }, []);
 
+  // Data fetching + polling — setState hanya terjadi async (setelah await)
+  // sehingga tidak trigger cascading renders synchronously di effect body
   useEffect(() => {
-    mountedRef.current = true;
-    setIsLoading(true);
-    fetchData(timeRange);
+    let cancelled = false;
 
-    const interval = setInterval(() => {
-      if (mountedRef.current) {
-        fetchData(timeRange);
+    const load = async () => {
+      try {
+        const data = await getMonitoringData(timeRange);
+        if (!cancelled) {
+          setDevices(data);
+          setIsLoading(false);
+        }
+      } catch (err) {
+        console.error("Monitoring fetch error:", err);
+        if (!cancelled) {
+          setDevices([]);
+          setIsLoading(false);
+        }
       }
-    }, 30000);
+    };
+
+    load();
+
+    const interval = setInterval(load, 30000);
 
     return () => {
-      mountedRef.current = false;
+      cancelled = true;
       clearInterval(interval);
     };
-  }, [timeRange, fetchData]);
+  }, [timeRange]);
 
   const handleTimeRangeChange = (newRange: MonitoringTimeRange) => {
     setTimeRange(newRange);
+    setIsLoading(true);
+    fetchData(newRange);
   };
 
   const handleManualRefresh = () => {

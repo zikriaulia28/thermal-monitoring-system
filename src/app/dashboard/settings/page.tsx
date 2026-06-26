@@ -35,7 +35,6 @@ export default function SettingsPage() {
   const [rateLimitInfo, setRateLimitInfo] = useState<string>("");
   const [cooldownRemaining, setCooldownRemaining] = useState(0);
   const [formData, setFormData] = useState<Partial<SettingsType>>({});
-  const formDataRef = useRef(formData);
   const [toast, setToast] = useState<{
     type: "success" | "error" | "warning";
     message: string;
@@ -63,8 +62,12 @@ export default function SettingsPage() {
     validateAccess();
   }, []);
 
+  // Sync settings ke formData hanya sekali saat pertama kali load
+  // Gunakan ref untuk cegah re-trigger dan hindari setState di effect
+  const initializedRef = useRef(false);
   useEffect(() => {
-    if (settings && Object.keys(formData).length === 0) {
+    if (settings && !initializedRef.current) {
+      initializedRef.current = true;
       setFormData(settings);
     }
   }, [settings]);

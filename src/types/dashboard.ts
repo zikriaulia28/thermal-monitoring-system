@@ -1,5 +1,3 @@
-import { LucideIcon } from "lucide-react";
-
 export interface DashboardOverview {
   online: number;
   offline: number;

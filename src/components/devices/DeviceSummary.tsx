@@ -9,7 +9,6 @@ export default function DeviceSummary({ devices }: Props) {
   const offline = devices.filter((d) => d.status === "offline").length;
 
   let temp = 0;
-  let hum = 0;
   let total = 0;
 
   devices.forEach((device) => {
@@ -17,7 +16,6 @@ export default function DeviceSummary({ devices }: Props) {
 
     if (latest) {
       temp += latest.temperature;
-      hum += latest.humidity;
       total++;
     }
   });

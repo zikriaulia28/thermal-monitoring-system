@@ -1,5 +1,5 @@
 import useSWR from 'swr';
-import { ReportResponse, ReportType } from '@/types/reports';
+import { ReportType } from '@/types/reports';
 
 interface ReportParams {
   type: ReportType;
@@ -31,7 +31,7 @@ export function useReportData(params: ReportParams) {
 
   const url = getReportEndpoint(params.type, queryString);
 
-  const { data, error, isLoading, mutate } = useSWR<{ success: boolean; data: any[]; summary: any }>(
+  const { data, error, isLoading, mutate } = useSWR<{ success: boolean; data: Array<{ id?: string; time?: string; [key: string]: unknown }>; summary: { totalRecords: number; period: string; devices: number } }>(
     url,
     reportFetcher,
     { revalidateOnFocus: false }

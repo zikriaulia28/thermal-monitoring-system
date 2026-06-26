@@ -93,7 +93,7 @@ export function exportDeviceToPDF(device: Device, timeRangeLabel: string) {
   // Data Table Rows (latest 20 readings)
   const recentReadings = device.readings.slice(-20).reverse();
   
-  recentReadings.forEach((reading, index) => {
+  recentReadings.forEach((reading) => {
     if (yPos > pageHeight - 30) {
       doc.addPage();
       yPos = 20;

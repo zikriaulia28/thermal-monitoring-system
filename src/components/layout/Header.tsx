@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, ChevronRight, Calendar, Clock, Bell, RefreshCw, Wifi, WifiOff, Shield, ShieldOff } from "lucide-react";
+import { Menu, ChevronRight, Calendar, Clock, Bell, RefreshCw, Wifi, WifiOff, Shield } from "lucide-react";
 import { useSystemStatus } from "@/hooks/useSystemStatus";
 import { checkAdminAccess } from "@/lib/adminAccess";
 
@@ -42,12 +42,13 @@ export default function Header({ onMenu }: Props) {
   const router = useRouter();
   const [time, setTime] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [isAdmin] = useState(() => {
+    if (typeof window !== "undefined") {
+      return checkAdminAccess();
+    }
+    return false;
+  });
   const { status } = useSystemStatus();
-
-  useEffect(() => {
-    setIsAdmin(checkAdminAccess());
-  }, []);
 
   useEffect(() => {
     const updateTime = () => {

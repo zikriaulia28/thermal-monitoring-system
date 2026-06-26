@@ -1,11 +1,10 @@
 import Papa from "papaparse";
 import { jsPDF } from "jspdf";
 
-declare global {
-  namespace jspdf {
-    interface jsPDF {
-      autoTable?: (options: Record<string, unknown>) => jsPDF;
-    }
+import 'jspdf';
+declare module 'jspdf' {
+  interface jsPDF {
+    autoTable?: (options: Record<string, unknown>) => jsPDF;
   }
 }
 

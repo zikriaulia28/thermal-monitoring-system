@@ -79,7 +79,7 @@ export default function DeviceFilter({
         <div className="hidden sm:block">
           <select
             value={sortBy}
-            onChange={(e) => onSortChange(e.target.value as any)}
+            onChange={(e) => onSortChange(e.target.value as "name" | "status" | "temperature" | "lastSeen")}
             className="w-full sm:w-auto px-4 py-2.5 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all cursor-pointer"
           >
             {sortOptions.map((option) => (
@@ -130,7 +130,7 @@ export default function DeviceFilter({
           </label>
           <select
             value={sortBy}
-            onChange={(e) => onSortChange(e.target.value as any)}
+            onChange={(e) => onSortChange(e.target.value as "name" | "status" | "temperature" | "lastSeen")}
             className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none"
           >
             {sortOptions.map((option) => (

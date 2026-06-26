@@ -86,7 +86,19 @@ export async function GET() {
       });
     });
 
-    const hourly: any[] = [];
+    interface HourlyEntry {
+      hour: string;
+      deviceId: string;
+      location: string;
+      count: number;
+      minTemp: number | null;
+      maxTemp: number | null;
+      avgTemp: number | null;
+      minHum: number | null;
+      maxHum: number | null;
+      avgHum: number | null;
+    }
+    const hourly: HourlyEntry[] = [];
 
     // Build complete hour range 00-23 so chart axis is continuous
     for (let h = 0; h < 24; h++) {

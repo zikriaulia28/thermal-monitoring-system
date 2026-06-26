@@ -19,8 +19,8 @@ import { Thermometer, Droplets, AlertCircle } from "lucide-react";
 import { useThresholds } from "@/hooks/useThresholds";
 
 interface Props {
-  temperatureData: any[];
-  humidityData: any[];
+  temperatureData: Record<string, number | string | null>[];
+  humidityData: Record<string, number | string | null>[];
   isLoading?: boolean;
 }
 
@@ -71,10 +71,19 @@ export default function EnhancedMonitoringChart({
   const unit = isTemperature ? "°C" : "%";
   const title = isTemperature ? "Temperature Monitoring" : "Humidity Monitoring";
 
-  const keys =
-    chartData.length > 0
-      ? [...new Set(chartData.flatMap((d) => Object.keys(d).filter((k) => k !== "time")))]
-      : [];
+  const keys = useMemo(
+    () =>
+      chartData.length > 0
+        ? [
+            ...new Set(
+              chartData.flatMap((d) =>
+                Object.keys(d).filter((k) => k !== "time"),
+              ),
+            ),
+          ]
+        : [],
+    [chartData],
+  );
 
   // ── Adaptive Y-axis domain ─────────────────────────────
   const yDomain = useMemo(() => {
@@ -245,7 +254,7 @@ export default function EnhancedMonitoringChart({
                   padding: "8px 12px",
                 }}
                 labelFormatter={(value) => fmtLabelWIB(value)}
-                formatter={(value: any, name: any) => [
+                formatter={(value: number | string, name: string) => [
                   `${Number(value).toFixed(2)} ${unit}`,
                   name,
                 ]}

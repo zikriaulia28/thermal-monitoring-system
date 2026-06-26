@@ -111,7 +111,7 @@ export default function ComparisonTemperatureChart({ data }: Props) {
             boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
           }}
           labelFormatter={(value) => formatWIB(value)}
-          formatter={(value: any, name: any) => [`${Number(value).toFixed(2)} °C`, name]}
+          formatter={(value: number | string, name: string) => [`${Number(value).toFixed(2)} °C`, name]}
         />
 
         <Legend wrapperStyle={{ fontSize: 11, paddingTop: "10px" }} iconType="circle" iconSize={8} />

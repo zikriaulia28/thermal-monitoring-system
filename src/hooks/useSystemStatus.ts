@@ -31,7 +31,7 @@ export function useSystemStatus(refreshInterval: number = 30000) {
           const alerts = await alertsRes.json();
 
           const unacknowledged = Array.isArray(alerts)
-            ? alerts.filter((alert: any) => !alert.acknowledged).length
+            ? alerts.filter((alert: { acknowledged?: boolean }) => !alert.acknowledged).length
             : 0;
 
           setStatus({

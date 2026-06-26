@@ -51,7 +51,6 @@ export default function DashboardPage() {
       }
     };
     load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Main data loading (dipengaruhi dropdown)

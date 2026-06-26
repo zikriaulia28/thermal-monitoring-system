@@ -192,7 +192,7 @@ export function transformMonitoringData(
   });
 
   const combined = timeAxis.map((time, i) => {
-    const row: Record<string, any> = { time };
+    const row: Record<string, number | string | null> = { time };
     for (const { key, aligned } of deviceAligned) {
       row[key] = aligned[i]?.[valueField] ?? null;
     }

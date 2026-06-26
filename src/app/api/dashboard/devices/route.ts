@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
-import { getDeviceStatus, getOfflineThresholdMs } from "@/lib/deviceStatus";
+import { getOfflineThresholdMs } from "@/lib/deviceStatus";
 
 export async function GET() {
   try {

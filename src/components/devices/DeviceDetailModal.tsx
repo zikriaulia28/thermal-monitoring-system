@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Download, X, Info } from "lucide-react";
 import { Device } from "@/types/device";
 import {
@@ -50,14 +50,16 @@ export default function DeviceDetailModal({ device, open, onClose }: Props) {
     fetchDeviceData();
   }, [timeRange, device, open, customFrom, customTo]);
 
-  // Reset when modal closes
+  // Reset when modal closes — derive from `open` via event handler, not effect
+  const prevOpenRef = useRef(open);
   useEffect(() => {
-    if (!open) {
+    if (prevOpenRef.current && !open) {
       setTimeRange("1d");
       setCustomFrom(null);
       setCustomTo(null);
       setDeviceData(device);
     }
+    prevOpenRef.current = open;
   }, [open, device]);
 
   const handleTimeRangeChange = (range: TimeRange, from?: Date, to?: Date) => {

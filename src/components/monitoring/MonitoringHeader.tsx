@@ -5,8 +5,6 @@ import { MonitoringTimeRange } from "@/types/monitoring";
 import {
   Server,
   Wifi,
-  WifiOff,
-  Thermometer,
   Droplets,
   RefreshCw,
   TrendingUp,

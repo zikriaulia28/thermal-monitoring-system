@@ -1,5 +1,12 @@
 import { ReportSummary, DetailedLogReport } from '@/types/reports';
 
+interface RawLogEntry {
+  createdAt: string | Date;
+  device?: { deviceId: string; location: string };
+  temperature: number;
+  humidity: number;
+}
+
 interface SensorReading {
   temperature: number;
   humidity: number;
@@ -78,18 +85,18 @@ export function summarizeByDay(
 }
 
 export function formatReportData(
-  data: any[],
+  data: (RawLogEntry | DetailedLogReport)[],
   reportType: string,
 ): DetailedLogReport[] {
   if (reportType === 'detailed') {
     return data.map((item) => ({
-      time: new Date(item.createdAt).toLocaleString('id-ID'),
-      device: item.device?.deviceId || 'Unknown',
-      location: item.device?.location || 'Unknown',
+      time: new Date((item as RawLogEntry).createdAt).toLocaleString('id-ID'),
+      device: (item as RawLogEntry).device?.deviceId || 'Unknown',
+      location: (item as RawLogEntry).device?.location || 'Unknown',
       temperature: item.temperature,
       humidity: item.humidity,
     }));
   }
 
-  return data;
+  return data as DetailedLogReport[];
 }

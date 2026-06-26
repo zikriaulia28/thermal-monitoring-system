@@ -29,7 +29,7 @@ export async function GET(request: Request) {
     const settings = await prisma.settings.findFirst();
     const intervalSeconds = settings?.monitoringIntervalSeconds;
 
-    const whereClause: any = {
+    const whereClause: Record<string, unknown> & { deviceId?: string } = {
       logs: {
         some: {
           createdAt: {

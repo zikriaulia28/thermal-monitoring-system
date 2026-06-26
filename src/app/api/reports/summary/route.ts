@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { summarizeByDay, calculateStats } from '@/lib/reportUtils';
+import { summarizeByDay } from '@/lib/reportUtils';
 
 export async function GET(request: Request) {
   try {

@@ -64,7 +64,6 @@ function DeviceMiniChart({
   hourly,
   stats,
   currentHour,
-  index,
 }: {
   deviceId: string;
   hourly: HourlyReading[];
@@ -250,23 +249,34 @@ function DeviceMiniChart({
 }
 
 /* ─── Compact Tooltip ─── */
+interface MiniTooltipPayload {
+  dataKey: string;
+  value: number;
+}
+interface MiniTooltipProps {
+  active?: boolean;
+  payload?: MiniTooltipPayload[];
+  label?: string | number;
+  color: string;
+  location: string;
+}
 function MiniTooltip({
   active,
   payload,
   label,
   color,
   location,
-}: any) {
+}: MiniTooltipProps) {
   if (!active || !payload?.length) return null;
 
   const entry = payload.find(
-    (p: any) => p.dataKey === "avg" || p.dataKey === "min" || p.dataKey === "max",
+    (p) => p.dataKey === "avg" || p.dataKey === "min" || p.dataKey === "max",
   );
   if (!entry) return null;
 
-  const avg = payload.find((p: any) => p.dataKey === "avg")?.value;
-  const min = payload.find((p: any) => p.dataKey === "min")?.value;
-  const max = payload.find((p: any) => p.dataKey === "max")?.value;
+  const avg = payload.find((p) => p.dataKey === "avg")?.value;
+  const min = payload.find((p) => p.dataKey === "min")?.value;
+  const max = payload.find((p) => p.dataKey === "max")?.value;
 
   return (
     <div className="bg-white/95 backdrop-blur-md rounded-lg shadow-xl border border-slate-200 px-3 py-2 min-w-[120px]">
@@ -338,8 +348,8 @@ export default function DailyTrendChart({
   );
   // Add any remaining devices not in DEVICE_ORDER
   for (const s of stats) {
-    if (!deviceIds.includes(s.location as any)) {
-      deviceIds.push(s.location as any);
+    if (!deviceIds.includes(s.location)) {
+      deviceIds.push(s.location);
     }
   }
 

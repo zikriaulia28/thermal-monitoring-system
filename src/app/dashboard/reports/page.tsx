@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useReportData } from "@/hooks/useReportData";
-import { ReportType, AlertReportItem, ReportSummary, DetailedLogReport } from "@/types/reports";
-import { Loader2, Download, FileJson, FileSpreadsheet } from "lucide-react";
+import { ReportType } from "@/types/reports";
+import { Loader2, Download, FileJson } from "lucide-react";
 import { exportToCSV, exportToPDF } from "@/lib/exportUtils";
-import { Toast, ToastProvider, useToast } from "@/components/ui/Toast";
+import { ToastProvider, useToast } from "@/components/ui/Toast";
 
 function getDefaultDateRange(): { startDate: string; endDate: string } {
   const end = new Date();

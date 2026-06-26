@@ -48,7 +48,7 @@ const menuGroups = [
 
 export default function Sidebar({ open, onClose }: Props) {
   const pathname = usePathname();
-  const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [, setHoveredItem] = useState<string | null>(null);
   const { status } = useSystemStatus();
 
   return (
@@ -126,7 +126,6 @@ export default function Sidebar({ open, onClose }: Props) {
                 {group.items.map((menu) => {
                   const Icon = menu.icon;
                   const active = pathname === menu.href;
-                  const isHovered = hoveredItem === menu.href;
                   const badgeCount = menu.showBadge ? status.unacknowledgedAlerts : 0;
 
                   return (
