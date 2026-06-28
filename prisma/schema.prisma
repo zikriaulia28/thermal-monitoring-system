@@ -48,6 +48,13 @@ model Alert {
   acknowledged Boolean @default(false)
 }
 
+model CleanupLog {
+  id            String   @id @default(cuid())
+  recordCount   Int
+  type          String
+  createdAt     DateTime @default(now())
+}
+
 model Settings {
   id                           String   @id @default(cuid())
 
@@ -56,7 +63,7 @@ model Settings {
   thresholdHumidityMin         Float    @default(30)
   thresholdHumidityMax         Float    @default(70)
 
-  dataRetentionDays            Int      @default(90)
+  dataRetentionDays            Int      @default(365)
   monitoringIntervalSeconds    Int      @default(5)
 
   createdAt                    DateTime @default(now())

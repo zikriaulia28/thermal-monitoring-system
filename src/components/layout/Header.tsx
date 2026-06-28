@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Menu, ChevronRight, Calendar, Clock, Bell, RefreshCw, Wifi, WifiOff, Shield } from "lucide-react";
 import { useSystemStatus } from "@/hooks/useSystemStatus";
@@ -42,24 +42,34 @@ export default function Header({ onMenu }: Props) {
   const router = useRouter();
   const [time, setTime] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [isAdmin] = useState(() => {
-    if (typeof window !== "undefined") {
+
+  // useSyncExternalStore: React 19 pattern for external store (localStorage)
+  // This prevents hydration mismatch: SSR returns false, client re-renders once
+  const isAdmin = useSyncExternalStore(
+    (onStoreChange) => {
+      window.addEventListener("storage", onStoreChange);
+      return () => window.removeEventListener("storage", onStoreChange);
+    },
+    () => {
+      if (typeof window === "undefined") return false;
       return checkAdminAccess();
-    }
-    return false;
-  });
+    },
+    () => false, // server snapshot
+  );
   const { status } = useSystemStatus();
 
   useEffect(() => {
     const updateTime = () => {
       const now = new Date();
       const dateStr = now.toLocaleDateString("id-ID", {
+        timeZone: "Asia/Jakarta",
         weekday: "short",
         day: "2-digit",
         month: "short",
         year: "numeric",
       });
       const timeStr = now.toLocaleTimeString("id-ID", {
+        timeZone: "Asia/Jakarta",
         hour: "2-digit",
         minute: "2-digit",
         second: "2-digit",

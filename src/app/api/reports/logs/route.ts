@@ -14,6 +14,7 @@ export async function GET(request: Request) {
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
     const deviceId = searchParams.get('deviceId');
+    const location = searchParams.get('location');
     const page = Math.max(1, parseInt(searchParams.get('page') || '1'));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '100')));
     const skip = (page - 1) * limit;
@@ -38,6 +39,15 @@ export async function GET(request: Request) {
 
     if (deviceId) {
       where.deviceId = deviceId;
+    }
+
+    if (location) {
+      where.device = {
+        location: {
+          contains: location,
+          mode: 'insensitive',
+        },
+      };
     }
 
     const [logs, total] = await Promise.all([

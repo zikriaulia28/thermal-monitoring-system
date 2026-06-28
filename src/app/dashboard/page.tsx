@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import {
   Wifi,
   WifiOff,
   Thermometer,
   Droplet,
-  AlertCircle,
+  LayoutDashboard,
 } from "lucide-react";
 
 import StatCard from "@/components/cards/StatCard";
@@ -16,10 +16,7 @@ import EventTable from "@/components/tables/EventTable";
 import TimeRangeFilter from "@/components/filters/TimeRangeFilter";
 
 import { Device } from "@/types/device";
-import {
-  DashboardOverview,
-  DeviceDailyStat,
-} from "@/types/dashboard";
+import { DashboardOverview, DeviceDailyStat } from "@/types/dashboard";
 import { TimeRange } from "@/types/filter";
 import { getChartData, getOverview, getDailyStats } from "@/services/dashboard.service";
 
@@ -32,63 +29,56 @@ export default function DashboardPage() {
   const [customDateFrom, setCustomDateFrom] = useState<Date | null>(null);
   const [customDateTo, setCustomDateTo] = useState<Date | null>(null);
 
-  // ── Daily trend state (independent of dropdown) ──
+  // ── Daily trend state ──
   const [dailyStats, setDailyStats] = useState<DeviceDailyStat[]>([]);
   const [dailyLoading, setDailyLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("daily-trend");
 
-  // Load daily stats on mount once
+  // Load daily stats on mount
   useEffect(() => {
-    const load = async () => {
+    let cancelled = false;
+    async function fetchDaily() {
       setDailyLoading(true);
       try {
         const data = await getDailyStats();
-        setDailyStats(data.stats);
+        if (!cancelled) setDailyStats(data.stats);
       } catch {
         // silent
       } finally {
-        setDailyLoading(false);
+        if (!cancelled) setDailyLoading(false);
       }
-    };
-    load();
+    }
+    fetchDaily();
+    return () => { cancelled = true; };
   }, []);
 
-  // Main data loading (dipengaruhi dropdown)
+  // Main data load
   useEffect(() => {
-    const loadData = async () => {
+    let cancelled = false;
+    async function fetchData() {
       try {
         setError(null);
         const [chartData, overviewData] = await Promise.all([
-          getChartData(
-            timeRange,
-            undefined,
-            customDateFrom || undefined,
-            customDateTo || undefined,
-          ),
+          getChartData(timeRange, undefined, customDateFrom || undefined, customDateTo || undefined),
           getOverview(),
         ]);
-        setDevices(chartData);
-        setOverview(overviewData);
-      } catch (error) {
-        console.error("Dashboard load error:", error);
-        setError("Gagal memuat data dashboard");
+        if (!cancelled) {
+          setDevices(chartData);
+          setOverview(overviewData);
+        }
+      } catch (err) {
+        console.error("Dashboard load error:", err);
+        if (!cancelled) setError("Gagal memuat data dashboard");
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
-    };
-
-    loadData();
-
-    const interval = setInterval(loadData, 30000);
-
-    return () => clearInterval(interval);
+    }
+    fetchData();
+    const interval = setInterval(fetchData, 30000);
+    return () => { cancelled = true; clearInterval(interval); };
   }, [timeRange, customDateFrom, customDateTo]);
 
-  const handleTimeRangeChange = (
-    newRange: TimeRange,
-    customFrom?: Date,
-    customTo?: Date,
-  ) => {
+  const handleTimeRangeChange = (newRange: TimeRange, customFrom?: Date, customTo?: Date) => {
     setTimeRange(newRange);
     if (customFrom && customTo) {
       setCustomDateFrom(customFrom);
@@ -97,11 +87,11 @@ export default function DashboardPage() {
     setIsLoading(true);
   };
 
-  const handleTabChange = useCallback((tab: string) => {
+  const handleTabChange = (tab: string) => {
     setActiveTab(tab);
-  }, []);
+  };
 
-  const dynamicStats = [
+  const statCards = [
     {
       title: "Device Online",
       value: isLoading ? "..." : `${overview?.online ?? 0}`,
@@ -112,16 +102,11 @@ export default function DashboardPage() {
       title: "Device Offline",
       value: isLoading ? "..." : `${overview?.offline ?? 0}`,
       icon: WifiOff,
-      status:
-        overview?.offline && overview.offline > 0
-          ? ("offline" as const)
-          : undefined,
+      status: overview?.offline && overview.offline > 0 ? ("offline" as const) : undefined,
     },
     {
       title: "Temperature Average",
-      value: isLoading
-        ? "..."
-        : `${overview?.avgTemperature.toFixed(1) ?? 0}°C`,
+      value: isLoading ? "..." : `${overview?.avgTemperature.toFixed(1) ?? 0}°C`,
       icon: Thermometer,
     },
     {
@@ -133,37 +118,53 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* Header - Responsif */}
-      <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+      {/* ── HEADER ───────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
-            Overview
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Realtime IoT Monitoring Dashboard
-          </p>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+              <LayoutDashboard className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
+                Overview
+              </h1>
+              <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm">
+                Realtime IoT Monitoring Dashboard
+              </p>
+            </div>
+          </div>
         </div>
-
-        {/* Time Range Filter */}
         <TimeRangeFilter value={timeRange} onChange={handleTimeRangeChange} />
       </div>
 
-      {/* Error Alert */}
+      {/* ── ERROR STATE ──────────────────────────────────── */}
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-          <div>
-            <h3 className="text-sm font-semibold text-red-800">
-              Error Loading Data
-            </h3>
-            <p className="text-sm text-red-600 mt-1">{error}</p>
+        <div className="relative overflow-hidden rounded-xl border border-red-200 dark:border-red-800 bg-gradient-to-r from-red-50 to-red-50/50 dark:from-red-950/20 dark:to-red-950/10 p-4 sm:p-5">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 to-rose-500" />
+          <div className="flex items-start gap-3">
+            <div className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-red-100 dark:bg-red-900/30">
+              <span className="text-lg">⚠️</span>
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold text-red-800 dark:text-red-400">
+                Gagal Memuat Data
+              </h3>
+              <p className="text-sm text-red-600 dark:text-red-500 mt-1">{error}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-2 text-xs font-semibold text-red-700 dark:text-red-400 hover:underline"
+              >
+                Coba refresh halaman
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Stats Cards - Grid Responsif */}
+      {/* ── STATS CARDS ─────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {dynamicStats.map((item) => (
+        {statCards.map((item) => (
           <StatCard
             key={item.title}
             title={item.title}
@@ -175,20 +176,23 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* ── DeviceMetrics — hanya muncul saat tab "Harian" aktif ── */}
+      {/* ── RINGKASAN HARIAN ────────────────────────────── */}
       {activeTab === "daily-trend" && dailyStats.length > 0 && (
-        <div className="rounded-xl border bg-white dark:bg-slate-800 shadow-sm p-3 sm:p-4 md:p-5">
-          <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-            <span className="w-1.5 h-4 bg-emerald-500 rounded-full" />
-            Ringkasan Harian
-          </h3>
-          <DeviceMetrics stats={dailyStats} isLoading={dailyLoading} />
+        <div className="relative overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-slate-800 dark:border-slate-700">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
+          <div className="p-3 sm:p-4 md:p-5">
+            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+              <span className="w-1.5 h-4 bg-emerald-500 rounded-full" />
+              Ringkasan Harian
+            </h3>
+            <DeviceMetrics stats={dailyStats} isLoading={dailyLoading} />
+          </div>
         </div>
       )}
 
-      {/* Main Content - Side by side di desktop */}
+      {/* ── MAIN CONTENT ────────────────────────────────── */}
       <div className="w-full grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
-        {/* Chart - Full width di mobile, 2/3 di desktop */}
+        {/* Chart */}
         <div className="w-full xl:col-span-2">
           <RealtimeChart
             devices={devices}
@@ -198,7 +202,7 @@ export default function DashboardPage() {
           />
         </div>
 
-        {/* Event Table - Full width di mobile, 1/3 di desktop */}
+        {/* Event Table */}
         <div className="w-full xl:col-span-1">
           <EventTable devices={devices} isLoading={isLoading} />
         </div>

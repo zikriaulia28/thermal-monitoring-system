@@ -50,7 +50,7 @@ export default function ModalTimeRangeSelector({
 
   const getDisplayText = () => {
     if (value === "custom" && customFrom && customTo) {
-      return `${customFrom.toLocaleDateString("id-ID", { day: "2-digit", month: "short" })} - ${customTo.toLocaleDateString("id-ID", { day: "2-digit", month: "short" })}`;
+      return `${customFrom.toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "short" })} - ${customTo.toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", day: "2-digit", month: "short" })}`;
     }
     return selectedOption?.label || "Select Range";
   };

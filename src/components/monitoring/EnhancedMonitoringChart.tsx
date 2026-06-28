@@ -14,9 +14,9 @@ import {
   ReferenceArea,
 } from "recharts";
 
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Thermometer, Droplets, AlertCircle } from "lucide-react";
 import { useThresholds } from "@/hooks/useThresholds";
+import { formatWIB } from "@/lib/formatWIB";
 
 interface Props {
   temperatureData: Record<string, number | string | null>[];
@@ -36,27 +36,6 @@ const HUM_COLORS: Record<string, string> = {
   BATTERY: "#16a34a",
 };
 
-/** Format ISO to "HH:mm" in WIB */
-function fmtTimeWIB(iso: string): string {
-  return new Date(iso).toLocaleTimeString("id-ID", {
-    timeZone: "Asia/Jakarta",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
-/** Format ISO to "Kam, 25 Jun, 20:50" in WIB */
-function fmtLabelWIB(iso: string): string {
-  return new Date(iso).toLocaleString("id-ID", {
-    timeZone: "Asia/Jakarta",
-    weekday: "short",
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
 export default function EnhancedMonitoringChart({
   temperatureData,
   humidityData,
@@ -74,18 +53,11 @@ export default function EnhancedMonitoringChart({
   const keys = useMemo(
     () =>
       chartData.length > 0
-        ? [
-            ...new Set(
-              chartData.flatMap((d) =>
-                Object.keys(d).filter((k) => k !== "time"),
-              ),
-            ),
-          ]
+        ? [...new Set(chartData.flatMap((d) => Object.keys(d).filter((k) => k !== "time")))]
         : [],
     [chartData],
   );
 
-  // ── Adaptive Y-axis domain ─────────────────────────────
   const yDomain = useMemo(() => {
     if (chartData.length === 0) return isTemperature ? [15, 40] : [0, 100];
 
@@ -164,72 +136,43 @@ export default function EnhancedMonitoringChart({
       <div className="h-[280px] sm:h-[340px] md:h-[400px] w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-full">
-            <LoadingSpinner />
-            <p className="text-sm text-slate-500 mt-3">Loading data...</p>
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full border-4 border-slate-200 dark:border-slate-700" />
+              <div className="w-12 h-12 rounded-full border-4 border-blue-500 border-t-transparent animate-spin absolute inset-0" />
+            </div>
+            <p className="text-sm text-slate-500 mt-3">Memuat data chart...</p>
           </div>
         ) : chartData.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-slate-400">
-            <AlertCircle className="w-10 h-10 mb-3 opacity-50" />
-            <p className="text-sm font-medium">No data available</p>
-            <p className="text-xs mt-1">Try selecting a different time range</p>
+            <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 mb-3">
+              <AlertCircle className="w-10 h-10 opacity-50" />
+            </div>
+            <p className="text-sm font-medium">Tidak Ada Data</p>
+            <p className="text-xs mt-1">Coba pilih rentang waktu lain</p>
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart
-              data={chartData}
-              margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
-            >
-              <CartesianGrid
-                strokeDasharray="3 3"
-                stroke="#e2e8f0"
-                className="dark:opacity-20"
-              />
+            <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" className="dark:opacity-20" />
 
-              {/* Background zones for temperature */}
               {isTemperature && (
                 <>
-                  <ReferenceArea
-                    y1={tempMax + 5}
-                    y2={tempMax + 20}
-                    fill="#fef2f2"
-                    fillOpacity={0.6}
-                  />
-                  <ReferenceArea
-                    y1={tempWarning}
-                    y2={tempMax}
-                    fill="#fff7ed"
-                    fillOpacity={0.4}
-                  />
-                  <ReferenceArea
-                    y1={yDomain[0]}
-                    y2={tempMin}
-                    fill="#eff6ff"
-                    fillOpacity={0.4}
-                  />
+                  <ReferenceArea y1={tempMax + 5} y2={tempMax + 20} fill="#fef2f2" fillOpacity={0.6} />
+                  <ReferenceArea y1={tempWarning} y2={tempMax} fill="#fff7ed" fillOpacity={0.4} />
+                  <ReferenceArea y1={yDomain[0]} y2={tempMin} fill="#eff6ff" fillOpacity={0.4} />
                 </>
               )}
 
-              {/* Background zones for humidity */}
               {!isTemperature && (
                 <>
-                  <ReferenceArea
-                    y1={humMax}
-                    y2={100}
-                    fill="#fef2f2"
-                    fillOpacity={0.6}
-                  />
-                  <ReferenceArea
-                    y1={yDomain[0]}
-                    y2={humMin}
-                    fill="#fef2f2"
-                    fillOpacity={0.4}
-                  />
+                  <ReferenceArea y1={humMax} y2={100} fill="#fef2f2" fillOpacity={0.6} />
+                  <ReferenceArea y1={yDomain[0]} y2={humMin} fill="#fef2f2" fillOpacity={0.4} />
                 </>
               )}
 
               <XAxis
                 dataKey="time"
-                tickFormatter={fmtTimeWIB}
+                tickFormatter={(iso) => formatWIB(iso, "short").replace(" WIB", "")}
                 tick={{ fontSize: 11, fill: "#64748b" }}
                 tickLine={false}
                 axisLine={{ stroke: "#e2e8f0" }}
@@ -253,20 +196,15 @@ export default function EnhancedMonitoringChart({
                   boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)",
                   padding: "8px 12px",
                 }}
-                labelFormatter={(value) => fmtLabelWIB(value)}
+                labelFormatter={(iso) => formatWIB(iso, "long")}
                 formatter={(value, name) => [
                   `${Number(value ?? 0).toFixed(2)} ${unit}`,
                   name,
                 ]}
               />
 
-              <Legend
-                wrapperStyle={{ fontSize: 12, paddingTop: "12px" }}
-                iconType="circle"
-                iconSize={8}
-              />
+              <Legend wrapperStyle={{ fontSize: 12, paddingTop: "12px" }} iconType="circle" iconSize={8} />
 
-              {/* Reference lines for temperature thresholds */}
               {isTemperature && (
                 <>
                   <ReferenceLine
@@ -278,7 +216,7 @@ export default function EnhancedMonitoringChart({
                       value: `CRITICAL ${tempMax + 5}°C`,
                       position: "insideTopRight",
                       fill: "#dc2626",
-                      fontSize: 10,
+                      fontSize: 12,
                       fontWeight: "bold",
                     }}
                   />
@@ -291,7 +229,7 @@ export default function EnhancedMonitoringChart({
                       value: `WARNING ${tempWarning}°C`,
                       position: "insideTopRight",
                       fill: "#f59e0b",
-                      fontSize: 10,
+                      fontSize: 12,
                       fontWeight: "bold",
                     }}
                   />
@@ -304,14 +242,13 @@ export default function EnhancedMonitoringChart({
                       value: `LOW ${tempMin}°C`,
                       position: "insideBottomRight",
                       fill: "#3b82f6",
-                      fontSize: 10,
+                      fontSize: 12,
                       fontWeight: "bold",
                     }}
                   />
                 </>
               )}
 
-              {/* Reference lines for humidity thresholds */}
               {!isTemperature && (
                 <>
                   <ReferenceLine
@@ -323,7 +260,7 @@ export default function EnhancedMonitoringChart({
                       value: `CRITICAL ${humMax}%`,
                       position: "insideTopRight",
                       fill: "#dc2626",
-                      fontSize: 10,
+                      fontSize: 12,
                       fontWeight: "bold",
                     }}
                   />
@@ -336,7 +273,7 @@ export default function EnhancedMonitoringChart({
                       value: `CRITICAL ${humMin}%`,
                       position: "insideBottomRight",
                       fill: "#dc2626",
-                      fontSize: 10,
+                      fontSize: 12,
                       fontWeight: "bold",
                     }}
                   />

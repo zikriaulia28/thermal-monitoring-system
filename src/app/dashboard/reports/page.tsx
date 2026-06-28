@@ -1,9 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useReportData } from "@/hooks/useReportData";
 import { ReportType } from "@/types/reports";
-import { Loader2, Download, FileJson } from "lucide-react";
+import {
+  FileText,
+  Download,
+  FileJson,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  MapPin,
+  AlertTriangle,
+  SlidersHorizontal,
+  Search,
+} from "lucide-react";
 import { exportToCSV, exportToPDF } from "@/lib/exportUtils";
 import { ToastProvider, useToast } from "@/components/ui/Toast";
 
@@ -29,6 +40,16 @@ function ReportsContent() {
 
   const { showToast } = useToast();
 
+  const splitDateTime = (dateTimeStr: string): { date: string; time: string } => {
+    if (!dateTimeStr || dateTimeStr === "-") return { date: "-", time: "-" };
+    const parts = dateTimeStr.split(" ");
+    if (parts.length >= 2) {
+      const time = parts[1].length > 5 ? parts[1].slice(0, 5) : parts[1];
+      return { date: parts[0], time };
+    }
+    return { date: dateTimeStr, time: "-" };
+  };
+
   const { data, summary, isLoading } = useReportData({
     type: reportType,
     startDate,
@@ -39,35 +60,31 @@ function ReportsContent() {
     limit: 50,
   });
 
-  const reportTypes: { value: ReportType; label: string; icon: string }[] = [
-    { value: "summary", label: "Daily Summary", icon: "📊" },
-    { value: "detailed", label: "Detailed Logs", icon: "📋" },
-    { value: "alerts", label: "Alerts Report", icon: "🚨" },
+  // Transform data for detailed view: split time into date & time columns
+  const displayData = useMemo(() => {
+    if (reportType === "detailed") {
+      return data.map((row: Record<string, unknown>) => {
+        const { date, time } = splitDateTime(String(row.time ?? ""));
+        return { ...row, date, time };
+      });
+    }
+    return data;
+  }, [data, reportType]);
+
+  const reportTypes: { value: ReportType; label: string; icon: React.ReactNode; accent: string }[] = [
+    { value: "summary", label: "Ringkasan Harian", icon: <Calendar className="w-4 h-4" />, accent: "from-blue-500 to-indigo-500" },
+    { value: "detailed", label: "Log Detail", icon: <FileJson className="w-4 h-4" />, accent: "from-emerald-500 to-teal-500" },
+    { value: "alerts", label: "Laporan Alert", icon: <AlertTriangle className="w-4 h-4" />, accent: "from-red-500 to-rose-500" },
   ];
 
   const getTableColumns = (): string[] => {
     switch (reportType) {
       case "summary":
-        return [
-          "date",
-          "location",
-          "tempAvg",
-          "tempMin",
-          "tempMax",
-          "humidityAvg",
-          "alertCount",
-        ];
+        return ["date", "location", "tempAvg", "tempMin", "tempMax", "humidityAvg", "alertCount"];
       case "detailed":
         return ["date", "time", "device", "location", "temperature", "humidity"];
       case "alerts":
-        return [
-          "createdAt",
-          "device",
-          "location",
-          "severity",
-          "message",
-          "acknowledged",
-        ];
+        return ["createdAt", "device", "location", "severity", "message", "acknowledged"];
       default:
         return data.length > 0 ? Object.keys(data[0]) : [];
     }
@@ -82,50 +99,39 @@ function ReportsContent() {
       if (key === "alertCount") return String(value);
       return value.toFixed(2);
     }
-    if (typeof value === "boolean") return value ? "Yes" : "No";
+    if (typeof value === "boolean") return value ? "Ya" : "Tidak";
     return String(value || "-");
   };
 
   const formatColumnHeader = (col: string): string => {
     const labels: Record<string, string> = {
-      date: "Date",
-      time: "Time (WIB)",
+      date: "Tanggal",
+      time: "Waktu (WIB)",
       device: "Device",
-      location: "Location",
-      tempAvg: "Temp Avg (°C)",
-      tempMin: "Temp Min (°C)",
-      tempMax: "Temp Max (°C)",
-      humidityAvg: "Humidity Avg (%)",
-      humidityMin: "Humidity Min (%)",
-      humidityMax: "Humidity Max (%)",
-      temperature: "Temperature (°C)",
-      humidity: "Humidity (%)",
-      alertCount: "Alerts",
-      createdAt: "Date & Time",
+      location: "Lokasi",
+      tempAvg: "Suhu Rata-rata (°C)",
+      tempMin: "Suhu Min (°C)",
+      tempMax: "Suhu Max (°C)",
+      humidityAvg: "Kelembaban Rata-rata (%)",
+      humidityMin: "Kelembaban Min (%)",
+      humidityMax: "Kelembaban Max (%)",
+      temperature: "Suhu (°C)",
+      humidity: "Kelembaban (%)",
+      alertCount: "Alert",
+      createdAt: "Tanggal & Waktu",
       severity: "Severity",
-      message: "Message",
+      message: "Pesan",
       acknowledged: "Status",
     };
-    return labels[col] || col.replace(/([A-Z])/g, " $1").toUpperCase();
+    return labels[col] || col;
   };
 
-  const splitDateTime = (dateTimeStr: string): { date: string; time: string } => {
-    if (!dateTimeStr || dateTimeStr === "-") return { date: "-", time: "-" };
-    // Format: "24/06/2026 14:30:25"
-    const parts = dateTimeStr.split(" ");
-    if (parts.length >= 2) {
-      return { date: parts[0], time: parts[1] };
-    }
-    return { date: dateTimeStr, time: "-" };
-  };
-
-  const handleExport = async (format: "csv" | "pdf") => {
+    const handleExport = async (format: "csv" | "pdf") => {
     setExporting(format);
     try {
       const columns = getTableColumns();
       const formattedData = data.map((row: Record<string, unknown>) => {
         if (reportType === "detailed" && row.time) {
-          // Split time into date and time for detailed logs
           const { date, time } = splitDateTime(String(row.time));
           return columns.reduce(
             (acc, col) => {
@@ -136,31 +142,25 @@ function ReportsContent() {
             {} as Record<string, string>,
           );
         }
-        
         return columns.reduce(
-          (acc, col) => ({
-            ...acc,
-            [col]: formatValue(col, row[col]),
-          }),
+          (acc, col) => ({ ...acc, [col]: formatValue(col, row[col]) }),
           {} as Record<string, string>,
         );
       });
 
       const filename = `${reportType}-report-${startDate}-${endDate}`;
-      
-      // Generate column labels
-      const columnLabels = columns.map(col => formatColumnHeader(col));
-      
+      const columnLabels = columns.map((col) => formatColumnHeader(col));
+
       if (format === "csv") {
         exportToCSV(formattedData, filename, columnLabels);
-        showToast("success", "CSV file downloaded successfully");
+        showToast("success", "CSV berhasil didownload");
       } else {
         exportToPDF(formattedData, filename, columns, columnLabels);
-        showToast("success", "PDF file downloaded successfully");
+        showToast("success", "PDF berhasil didownload");
       }
     } catch (error) {
       console.error("Export error:", error);
-      showToast("error", "Failed to export file. Please try again.");
+      showToast("error", "Gagal export file. Coba lagi.");
     } finally {
       setExporting(null);
     }
@@ -169,121 +169,139 @@ function ReportsContent() {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="mb-4 sm:mb-6">
-        <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
-          Reports
-        </h1>
-        <p className="text-xs sm:text-sm md:text-base text-slate-500 dark:text-slate-400 mt-1">
-          Generate and export system reports
-        </p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
+            <FileText className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
+              Reports
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+              Generate dan export laporan sistem
+            </p>
+          </div>
+        </div>
       </div>
 
-      {/* Report Type Selection */}
+      {/* Report Type Pill Buttons */}
       <div className="flex flex-wrap gap-2">
-        {reportTypes.map((type) => (
-          <button
-            key={type.value}
-            onClick={() => {
-              setReportType(type.value);
-              setCurrentPage(1);
-            }}
-            className={`px-3 py-2 sm:px-4 sm:py-2 rounded-lg font-medium text-sm sm:text-base transition ${
-              reportType === type.value
-                ? "bg-blue-500 text-white"
-                : "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-            }`}
-          >
-            {type.icon} {type.label}
-          </button>
-        ))}
+        {reportTypes.map((type) => {
+          const isActive = reportType === type.value;
+          return (
+            <button
+              key={type.value}
+              onClick={() => { setReportType(type.value); setCurrentPage(1); }}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+                isActive
+                  ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
+                  : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm"
+              }`}
+            >
+              {type.icon}
+              <span>{type.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Filters */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-4 sm:p-6 shadow-sm">
-        <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white mb-3 sm:mb-4">
-          Filters
-        </h2>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              Start Date
-            </label>
-            <input
-              type="date"
-              value={startDate}
-              onChange={(e) => {
-                setStartDate(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
+      <div className="relative overflow-hidden rounded-xl border bg-white dark:bg-slate-800 dark:border-slate-700 shadow-sm">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-violet-500" />
+        <div className="p-4 sm:p-6 pt-5">
+          <div className="flex items-center gap-2 mb-4">
+            <SlidersHorizontal className="w-4 h-4 text-slate-500 dark:text-slate-400" />
+            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Filter Laporan</h2>
           </div>
 
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              End Date
-            </label>
-            <input
-              type="date"
-              value={endDate}
-              onChange={(e) => {
-                setEndDate(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-
-          {reportType !== "alerts" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Location
-              </label>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Tanggal Mulai</label>
               <input
-                type="text"
-                placeholder="Filter by location..."
-                value={location}
-                onChange={(e) => {
-                  setLocation(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                type="date"
+                value={startDate}
+                onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
+                className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               />
             </div>
-          )}
 
-          {reportType === "alerts" && (
             <div>
-              <label className="block text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                Severity
-              </label>
-              <select
-                value={severity}
-                onChange={(e) => {
-                  setSeverity(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                <option value="">All Severities</option>
-                <option value="WARNING">Warning</option>
-                <option value="CRITICAL">Critical</option>
-              </select>
+              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Tanggal Akhir</label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
+                className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              />
             </div>
-          )}
+
+            {reportType !== "alerts" && (
+              <div>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Lokasi</label>
+                <div className="relative">
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Filter lokasi..."
+                    value={location}
+                    onChange={(e) => { setLocation(e.target.value); setCurrentPage(1); }}
+                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  />
+                </div>
+              </div>
+            )}
+
+            {reportType === "alerts" && (
+              <div>
+                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Severity</label>
+                <div className="relative">
+                  <AlertTriangle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <select
+                    value={severity}
+                    onChange={(e) => { setSeverity(e.target.value); setCurrentPage(1); }}
+                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none"
+                  >
+                    <option value="">Semua Severity</option>
+                    <option value="WARNING">Warning</option>
+                    <option value="CRITICAL">Critical</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Summary Stats */}
       {summary && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 sm:p-4">
-          <p className="text-xs sm:text-sm text-blue-800 dark:text-blue-400">
-            <strong>Period:</strong> {summary.period} •{" "}
-            <strong>Records:</strong> {summary.totalRecords}
-            {reportType === "alerts" && summary.critical !== undefined &&
-              ` • Critical: ${summary.critical} • Warning: ${summary.warning} • Pending: ${summary.pending}`}
-          </p>
+        <div className="relative overflow-hidden rounded-xl border bg-white dark:bg-slate-800 dark:border-slate-700 shadow-sm">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-cyan-500" />
+          <div className="p-4 sm:p-5">
+            <div className="flex flex-wrap items-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Periode:</span>
+                <span className="font-semibold text-slate-800 dark:text-white">{summary.period}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Record:</span>
+                <span className="font-semibold text-slate-800 dark:text-white">{summary.totalRecords}</span>
+              </div>
+              {reportType === "alerts" && summary.critical !== undefined && (
+                <>
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-red-600">
+                    <span className="w-2 h-2 rounded-full bg-red-500" /> Critical: {summary.critical}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-amber-600">
+                    <span className="w-2 h-2 rounded-full bg-amber-500" /> Warning: {summary.warning}
+                  </span>
+                  <span className="flex items-center gap-1.5 text-xs font-medium text-blue-600">
+                    <span className="w-2 h-2 rounded-full bg-blue-500" /> Pending: {summary.pending}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
@@ -292,59 +310,54 @@ function ReportsContent() {
         <button
           onClick={() => handleExport("csv")}
           disabled={isLoading || data.length === 0 || exporting !== null}
-          className="px-3 py-2 sm:px-4 sm:py-2 bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm sm:text-base font-medium rounded-lg flex items-center gap-2 transition"
+          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl shadow-sm hover:shadow-md transition-all"
         >
           {exporting === "csv" ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="hidden sm:inline">Exporting...</span>
-            </>
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
-            <>
-              <Download className="w-4 h-4" />
-              <span className="hidden sm:inline">Download CSV</span>
-              <span className="sm:hidden">CSV</span>
-            </>
+            <Download className="w-4 h-4" />
           )}
+          <span>Download CSV</span>
         </button>
 
         <button
           onClick={() => handleExport("pdf")}
           disabled={isLoading || data.length === 0 || exporting !== null}
-          className="px-3 py-2 sm:px-4 sm:py-2 bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm sm:text-base font-medium rounded-lg flex items-center gap-2 transition"
+          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl shadow-sm hover:shadow-md transition-all"
         >
           {exporting === "pdf" ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span className="hidden sm:inline">Exporting...</span>
-            </>
+            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
           ) : (
-            <>
-              <FileJson className="w-4 h-4" />
-              <span className="hidden sm:inline">Download PDF</span>
-              <span className="sm:hidden">PDF</span>
-            </>
+            <FileJson className="w-4 h-4" />
           )}
+          <span>Download PDF</span>
         </button>
       </div>
 
-      {/* Data Table - Card Layout for Mobile */}
-      <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+      {/* Data Table */}
+      <div className="relative overflow-hidden rounded-xl border bg-white dark:bg-slate-800 dark:border-slate-700 shadow-sm">
         {isLoading ? (
-          <div className="flex items-center justify-center p-8 sm:p-12">
-            <Loader2 className="w-6 h-6 sm:w-8 sm:h-8 animate-spin text-blue-500" />
+          <div className="flex flex-col items-center justify-center p-10 sm:p-14">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full border-4 border-slate-200 dark:border-slate-700" />
+              <div className="w-12 h-12 rounded-full border-4 border-blue-500 border-t-transparent animate-spin absolute inset-0" />
+            </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-3">Memuat data laporan...</p>
           </div>
-        ) : data.length === 0 ? (
-          <div className="flex items-center justify-center p-8 sm:p-12 text-slate-500 text-sm sm:text-base">
-            <p>No data available for the selected filters</p>
+        ) : displayData.length === 0 ? (
+          <div className="flex flex-col items-center justify-center p-10 sm:p-14">
+            <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-700 mb-3">
+              <Search className="w-10 h-10 text-slate-400 dark:text-slate-500" />
+            </div>
+            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Tidak Ada Data</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Coba ubah filter atau rentang tanggal</p>
           </div>
         ) : (
           <>
             {/* Mobile Card Layout */}
             <div className="md:hidden divide-y divide-slate-200 dark:divide-slate-700">
-              {data.map((row: Record<string, unknown>, idx: number) => (
+              {displayData.map((row: Record<string, unknown>, idx: number) => (
                 <div key={idx} className="p-3 space-y-2">
-                  {/* Header Row */}
                   <div className="flex items-center justify-between">
                     {reportType === "alerts" && (
                       <span
@@ -358,14 +371,10 @@ function ReportsContent() {
                       </span>
                     )}
                     {reportType === "summary" && (
-                      <span className="text-xs font-medium text-slate-900 dark:text-white">
-                        {String(row.date)}
-                      </span>
+                      <span className="text-xs font-medium text-slate-900 dark:text-white">{String(row.date)}</span>
                     )}
                     {reportType === "detailed" && (
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        {String(row.time)}
-                      </span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">{String(row.time)}</span>
                     )}
                     {row.acknowledged !== undefined && (
                       <span
@@ -379,8 +388,6 @@ function ReportsContent() {
                       </span>
                     )}
                   </div>
-
-                  {/* Content */}
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
                       <span className="text-slate-500 dark:text-slate-400">Device:</span>
@@ -389,15 +396,15 @@ function ReportsContent() {
                     {reportType === "summary" && (
                       <>
                         <div>
-                          <span className="text-slate-500 dark:text-slate-400">Temp:</span>
+                          <span className="text-slate-500 dark:text-slate-400">Suhu:</span>
                           <span className="ml-1 text-slate-900 dark:text-white">{formatValue("tempAvg", row.tempAvg)}°C</span>
                         </div>
                         <div>
-                          <span className="text-slate-500 dark:text-slate-400">Humidity:</span>
+                          <span className="text-slate-500 dark:text-slate-400">Kelembaban:</span>
                           <span className="ml-1 text-slate-900 dark:text-white">{formatValue("humidityAvg", row.humidityAvg)}%</span>
                         </div>
                         <div>
-                          <span className="text-slate-500 dark:text-slate-400">Alerts:</span>
+                          <span className="text-slate-500 dark:text-slate-400">Alert:</span>
                           <span className="ml-1 text-slate-900 dark:text-white">{String(row.alertCount || 0)}</span>
                         </div>
                       </>
@@ -409,15 +416,15 @@ function ReportsContent() {
                           <span className="ml-1 text-slate-900 dark:text-white truncate">{String(row.device || "-")}</span>
                         </div>
                         <div>
-                          <span className="text-slate-500 dark:text-slate-400">Location:</span>
+                          <span className="text-slate-500 dark:text-slate-400">Lokasi:</span>
                           <span className="ml-1 text-slate-900 dark:text-white truncate">{String(row.location || "-")}</span>
                         </div>
                         <div>
-                          <span className="text-slate-500 dark:text-slate-400">Temp:</span>
+                          <span className="text-slate-500 dark:text-slate-400">Suhu:</span>
                           <span className="ml-1 text-slate-900 dark:text-white">{formatValue("temperature", row.temperature)}°C</span>
                         </div>
                         <div>
-                          <span className="text-slate-500 dark:text-slate-400">Humidity:</span>
+                          <span className="text-slate-500 dark:text-slate-400">Kelembaban:</span>
                           <span className="ml-1 text-slate-900 dark:text-white">{formatValue("humidity", row.humidity)}%</span>
                         </div>
                       </>
@@ -429,11 +436,11 @@ function ReportsContent() {
                           <span className="ml-1 text-slate-900 dark:text-white">{String(row.device || "-")}</span>
                         </div>
                         <div className="col-span-2">
-                          <span className="text-slate-500 dark:text-slate-400">Location:</span>
+                          <span className="text-slate-500 dark:text-slate-400">Lokasi:</span>
                           <span className="ml-1 text-slate-900 dark:text-white">{String(row.location || "-")}</span>
                         </div>
                         <div className="col-span-2">
-                          <span className="text-slate-500 dark:text-slate-400">Message:</span>
+                          <span className="text-slate-500 dark:text-slate-400">Pesan:</span>
                           <p className="text-slate-900 dark:text-white text-xs mt-0.5 line-clamp-2">{String(row.message || "-")}</p>
                         </div>
                       </>
@@ -451,7 +458,7 @@ function ReportsContent() {
                     {getTableColumns().map((col) => (
                       <th
                         key={col}
-                        className="px-3 py-2 sm:px-4 sm:py-3 text-left text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap"
+                        className="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap"
                       >
                         {formatColumnHeader(col)}
                       </th>
@@ -459,38 +466,23 @@ function ReportsContent() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                  {data.map((row: Record<string, unknown>, idx: number) => (
-                    <tr
-                      key={idx}
-                      className="hover:bg-slate-50 dark:hover:bg-slate-700 transition"
-                    >
+                  {displayData.map((row: Record<string, unknown>, idx: number) => (
+                    <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                       {getTableColumns().map((col) => (
                         <td
                           key={col}
-                          className="px-3 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm text-slate-700 dark:text-slate-300 max-w-[150px] sm:max-w-none truncate"
+                          className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 max-w-[150px] sm:max-w-none truncate"
                           title={String(row[col] || "")}
                         >
                           {col === "acknowledged" ? (
-                            <span
-                              className={`px-2 py-1 rounded text-xs font-medium ${
-                                row[col]
-                                  ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
-                                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                              }`}
-                            >
-                              {row[col] ? "ACK" : "PENDING"}
-                            </span>
-                          ) : col === "severity" ? (
-                            <span
-                              className={`px-2 py-1 rounded text-xs font-medium ${
-                                row[col] === "CRITICAL"
-                                  ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                                  : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
-                              }`}
-                            >
-                              {String(row[col])}
-                            </span>
-                          ) : (
+                              <span className={row[col] ? "px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400" : "px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"}>
+                                {row[col] ? "ACK" : "PENDING"}
+                              </span>
+                            ) : col === "severity" ? (
+                              <span className={row[col] === "CRITICAL" ? "px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400" : "px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"}>
+                                {String(row[col])}
+                              </span>
+                            ) : (
                             <span className="truncate block">{formatValue(col, row[col])}</span>
                           )}
                         </td>
@@ -506,29 +498,29 @@ function ReportsContent() {
 
       {/* Pagination */}
       {summary && summary.totalRecords > 50 && (
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
-          <p className="text-xs sm:text-sm text-slate-500 text-center sm:text-left">
-            Showing {(currentPage - 1) * 50 + 1} to{" "}
-            {Math.min(currentPage * 50, summary.totalRecords)} of{" "}
-            {summary.totalRecords} records
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-xs text-slate-500 dark:text-slate-400">
+            Menampilkan {(currentPage - 1) * 50 + 1} – {Math.min(currentPage * 50, summary.totalRecords)} dari {summary.totalRecords} record
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+              className="flex items-center gap-1 px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
             >
-              ← Prev
+              <ChevronLeft className="w-4 h-4" />
+              <span>Prev</span>
             </button>
-            <span className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-              Page {currentPage} of {Math.ceil(summary.totalRecords / 50)}
+            <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+              Halaman {currentPage} / {Math.ceil(summary.totalRecords / 50)}
             </span>
             <button
               onClick={() => setCurrentPage(currentPage + 1)}
               disabled={currentPage * 50 >= summary.totalRecords}
-              className="px-3 py-2 text-sm border border-slate-300 dark:border-slate-600 rounded disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+              className="flex items-center gap-1 px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
             >
-              Next →
+              <span>Next</span>
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         </div>

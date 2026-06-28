@@ -11,6 +11,8 @@ import {
   YAxis,
 } from "recharts";
 
+import { formatWIB } from "@/lib/formatWIB";
+
 interface Props {
   data: {
     time: string;
@@ -19,26 +21,7 @@ interface Props {
   }[];
 }
 
-const formatWIB = (iso: string) => {
-  const d = new Date(iso);
-  return d.toLocaleTimeString("id-ID", {
-    timeZone: "Asia/Jakarta",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-};
-
-const formatWIBFull = (iso: string) => {
-  const d = new Date(iso);
-  return d.toLocaleString("id-ID", {
-    timeZone: "Asia/Jakarta",
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-};
+const formatWIBShort = (iso: string) => formatWIB(iso, "short");
 
 export default function DeviceDetailChart({ data }: Props) {
   if (!data || data.length === 0) {
@@ -69,7 +52,7 @@ export default function DeviceDetailChart({ data }: Props) {
 
           <XAxis
             dataKey="time"
-            tickFormatter={formatWIB}
+            tickFormatter={formatWIBShort}
             tick={{ fontSize: 10, fill: "#64748b" }}
             tickLine={false}
             minTickGap={15}
@@ -102,7 +85,7 @@ export default function DeviceDetailChart({ data }: Props) {
               borderRadius: "8px",
               fontSize: "12px",
             }}
-            labelFormatter={(value) => formatWIBFull(value)}
+            labelFormatter={(value) => formatWIB(value, "long")}
             formatter={(value, name) => {
               if (name === "Temperature") {
                 return [`${Number(value).toFixed(2)} °C`, name];

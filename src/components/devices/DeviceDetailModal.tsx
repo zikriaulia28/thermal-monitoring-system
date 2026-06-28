@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
+import { formatWIB } from "@/lib/formatWIB";
 import DeviceDetailChart from "@/components/charts/DeviceDetailChart";
 import ModalTimeRangeSelector from "./ModalTimeRangeSelector";
 import { TimeRange, TIME_RANGE_OPTIONS } from "@/types/filter";
@@ -74,7 +75,7 @@ export default function DeviceDetailModal({ device, open, onClose }: Props) {
     if (!deviceData) return;
     
     const rangeLabel = timeRange === "custom" && customFrom && customTo
-      ? `${customFrom.toLocaleDateString("id-ID")} - ${customTo.toLocaleDateString("id-ID")}`
+      ? `${customFrom.toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "short" })} - ${customTo.toLocaleDateString("id-ID", { timeZone: "Asia/Jakarta", day: "numeric", month: "short" })}`
       : TIME_RANGE_OPTIONS.find((o) => o.value === timeRange)?.label || "";
     
     exportDeviceToPDF(deviceData, rangeLabel);
@@ -149,7 +150,7 @@ export default function DeviceDetailModal({ device, open, onClose }: Props) {
                 Device {deviceData.status === "online" ? "Online" : "Offline"}
               </p>
               <p className="text-xs text-slate-600 dark:text-slate-400 mt-0.5">
-                Last seen: {deviceData.lastSeen ? new Date(deviceData.lastSeen).toLocaleString("id-ID") : "-"}
+                Last seen: {deviceData.lastSeen ? formatWIB(deviceData.lastSeen, "long") : "-"}
               </p>
             </div>
           </div>

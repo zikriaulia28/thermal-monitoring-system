@@ -16,6 +16,23 @@ async function getThresholds() {
 
 export async function POST(req: Request) {
   try {
+    // ─────────────────────────────────────────────────────────────
+    // Sensor API Key Authentication (Simple but effective)
+    // ESP32 must send: X-API-Key: sht31-cpems-2026
+    // ─────────────────────────────────────────────────────────────
+    const apiKey = req.headers.get("x-api-key");
+    if (!apiKey || apiKey !== process.env.SENSOR_API_KEY) {
+      const ip = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "unknown";
+      const ua = req.headers.get("user-agent") || "unknown";
+      console.warn(
+        `[SENSOR AUTH FAILED] IP=${ip} User-Agent=${ua} Key=${apiKey || "(none)"} Time=${new Date().toISOString()}`,
+      );
+      return NextResponse.json(
+        { success: false, error: "Unauthorized: Invalid or missing API key" },
+        { status: 401 },
+      );
+    }
+
     const body = await req.json();
     const { deviceId, location, temperature, humidity } = body;
 
