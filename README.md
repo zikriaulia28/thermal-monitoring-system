@@ -6,12 +6,11 @@
 
 ## 📋 Deskripsi Proyek
 
-CPEMS adalah sistem monitoring terpadu yang dirancang untuk memantau suhu dan kelembapan ruangan elektrikal kritis seperti:
+CPEMS adalah sistem monitoring terpadu yang dirancang untuk memantau suhu dan kelembapan ruangan elektrikal kritis di lingkungan industri:
 
 - **Ruang PDB** (Power Distribution Board)
 - **Ruang UPS** (Uninterruptible Power Supply)
 - **Ruang Battery**
-- Dan ruang-ruang elektrikal lainnya
 
 Sistem ini menggunakan sensor **SHT31** dengan microcontroller **ESP32-C3 Super Mini** untuk pengumpulan data real-time dan mengirimkannya ke dashboard web yang dapat diakses oleh **Operator** dan **Teknisi** di lapangan.
 
@@ -23,23 +22,28 @@ Sistem ini menggunakan sensor **SHT31** dengan microcontroller **ESP32-C3 Super 
 
 | Fitur | Status | Keterangan |
 |-------|--------|------------|
-| **📊 Dashboard Real-time** | ✅ | Overview suhu, kelembapan, alert count semua ruangan |
-| **📈 Grafik Interaktif** | ✅ | Recharts chart dengan filter 1h/6h/24h/7d |
-| **🔔 Alert Management** | ✅ | Filter server-side (severity, search, status), acknowledge |
-| **📱 Multi-Device** | ✅ | Monitoring dari berbagai ruangan |
-| **📋 Report Generation** | ✅ | Export CSV & PDF dengan date filter, pagination |
-| **📱 Responsive Layout** | ✅ | Mobile card layout + Desktop table |
-| **🔐 Admin Auth** | ✅ | httpOnly cookie session via env variable |
-| **⚙️ Settings** | ✅ | Threshold temperature & humidity configuration |
-| **⚠️ Toast Notifications** | ✅ | Feedback success/error/warning konsisten |
+| **📊 Dashboard Real-time** | ✅ | Overview suhu, kelembapan, alert count semua ruangan dengan gradient accent cards |
+| **📈 Grafik Interaktif** | ✅ | Recharts chart dengan threshold zones, time alignment per-menit, filter 1h/6h/24h/7d |
+| **👁️ Monitoring Real-time** | ✅ | Chart adaptif dengan sparklines, WIB timezone, threshold reference lines |
+| **🔔 Alert Management** | ✅ | Pill button filter (severity, status), acknowledge, debounce search, optimistic update |
+| **📱 Multi-Device** | ✅ | Grid cards dengan search, filter, sort, dan detail modal per device |
+| **📋 Report Generation** | ✅ | 3 tipe laporan (Daily Summary, Detailed Logs, Alerts), export CSV & PDF dengan date range picker |
+| **📱 Responsive Layout** | ✅ | Mobile card ↔ Desktop table, dark mode konsisten |
+| **🔐 Admin Auth** | ✅ | Server-side password verification (ADMIN_KEY), httpOnly cookie session, rate limiting |
+| **⚙️ Settings** | ✅ | Threshold suhu & humidity, data retention (7-365 hari), auto cleanup |
+| **⚠️ Toast Notifications** | ✅ | Feedback success/error/warning/info |
+| **🔌 Adaptive Offline Detection** | ✅ | Threshold adaptif berdasarkan interval kirim data, auto alert saat device offline |
+| **🧹 Auto Cleanup** | ✅ | Hapus data lama otomatis via Vercel cron (daily 03:00 WIB) sesuai data retention |
 
 ### 🔄 Dalam Pengembangan
 
 - [ ] Multi-language support (EN, ID)
 - [ ] Email & SMS notifications
-- [ ] Advanced analytics & predictions
+- [ ] Advanced analytics & ML predictions
 - [ ] Preventive maintenance alerts
 - [ ] Data encryption hardening
+- [ ] Mobile app (iOS/Android)
+- [ ] User role management (admin, operator, teknisi)
 
 ---
 
@@ -47,37 +51,38 @@ Sistem ini menggunakan sensor **SHT31** dengan microcontroller **ESP32-C3 Super 
 
 ### Frontend
 
-| Teknologi       | Versi   | Fungsi                     |
-| --------------- | ------- | -------------------------- |
-| Next.js         | 16.2.7  | Full-stack React framework |
-| React           | 19.2.4  | UI library                 |
-| Tailwind CSS    | 4       | Styling framework          |
-| Recharts        | 3.8.1   | Data visualization         |
-| Shadcn/ui       | 4.10.0  | Component library          |
-| Zustand         | 5.0.14  | State management           |
-| TanStack Query  | 5.101.0 | Server state management    |
-| SWR             | 2.4.1   | Data fetching & caching    |
-| React Hook Form | 7.77.0  | Form management            |
-| Lucide React    | -       | Icons                      |
-| papaparse       | -       | CSV export                 |
-| jspdf           | -       | PDF export                 |
+| Teknologi | Versi | Fungsi |
+|-----------|-------|--------|
+| Next.js | 16.2.7 | Full-stack React framework |
+| React | 19.2.4 | UI library |
+| Tailwind CSS | 4 | Styling framework |
+| Recharts | 3.8.1 | Data visualization |
+| Shadcn/ui | 4.10.0 | Component library |
+| Framer Motion | 12.40.0 | Animations |
+| Lucide React | 1.17.0 | Icons |
+| papaparse | 5.5.3 | CSV export |
+| jspdf + jspdf-autotable | 4.2.1 | PDF export |
+| react-hook-form | 7.77.0 | Form management |
+| lodash.debounce | 4.0.8 | Search debounce |
 
 ### Backend & Database
 
-| Teknologi          | Versi  | Fungsi               |
-| ------------------ | ------ | -------------------- |
-| Next.js API Routes | 16.2.7 | Backend API          |
-| Prisma ORM         | 6.19.3 | Database abstraction |
-| PostgreSQL         | -      | Database             |
-| Supabase           | -      | Cloud DB & hosting   |
+| Teknologi | Versi | Fungsi |
+|-----------|-------|--------|
+| Next.js API Routes | 16.2.7 | Backend API |
+| Prisma ORM | 6.19.3 | Database abstraction |
+| PostgreSQL | - | Database |
+| Supabase | - | Cloud DB & hosting |
+
+> **Catatan**: `@tanstack/react-query` terinstal namun belum aktif digunakan. Proyek menggunakan SWR + useState untuk data fetching.
 
 ### Hardware
 
-| Komponen        | Spesifikasi                    |
-| --------------- | ------------------------------ |
-| Microcontroller | ESP32-C3 Super Mini            |
-| Sensor          | SHT31 (Temperature & Humidity) |
-| Interface       | I2C (SCL: GPIO8, SDA: GPIO9)   |
+| Komponen | Spesifikasi |
+|----------|-------------|
+| Microcontroller | ESP32-C3 Super Mini |
+| Sensor | SHT31 (Temperature & Humidity) |
+| Interface | I2C (SCL: GPIO8, SDA: GPIO9) |
 
 ---
 
@@ -89,7 +94,7 @@ Sistem ini menggunakan sensor **SHT31** dengan microcontroller **ESP32-C3 Super 
 model Device {
   id        String @id @default(cuid())
   deviceId  String @unique          // ID unik perangkat
-  location  String                  // Lokasi ruangan (PDB, UPS, Battery, dll)
+  location  String                  // Lokasi ruangan (PDB, UPS, Battery)
   lastSeen  DateTime?               // Terakhir kali online
   logs      SensorLog[]             // Relasi ke data sensor
   createdAt DateTime @default(now())
@@ -208,32 +213,41 @@ Aplikasi akan berjalan di [http://localhost:3000](http://localhost:3000)
 
 ### 🔐 Admin Access
 
-Dashboard dilindungi password. Masukkan password yang sesuai dengan `ADMIN_KEY` di environment variable. Session berlaku 24 jam via httpOnly cookie.
+Dashboard dilindungi password. Masukkan password yang sesuai dengan `ADMIN_KEY` di environment variable. Session berlaku 24 jam via httpOnly cookie. Endpoint `/api/auth/check-session` digunakan untuk validasi session dari client.
 
 ### 🏠 Dashboard
 
 - Overview suhu rata-rata, humidity rata-rata, total device, alert aktif
-- Status perangkat online/offline
-- Akses cepat ke semua halaman
+- Status perangkat online/offline dengan adaptive offline detection
+- Ringkasan harian dengan gradient accent cards
+- Loading skeleton animasi saat memuat data
 
 ### 👁️ Monitoring
 
-- Grafik suhu & kelembapan real-time (refresh 30 detik)
-- Filter berdasarkan ruangan (All, PDB, UPS, Battery)
-- Rentang waktu: 1 Jam / 6 Jam / 24 Jam / 7 Hari
-- Threshold line indicator
+- Grafik suhu & kelembapan real-time dengan time alignment per-menit
+- Threshold zones (Warning, Critical, Low) dengan reference lines
+- Filter berdasarkan ruangan + rentang waktu: 1 Jam / 6 Jam / 24 Jam / 7 Hari
+- Sparkline per device untuk ringkasan cepat
+- WIB timezone (UTC+7) konsisten di semua tampilan waktu
+
+### 📱 Devices
+
+- Grid cards dengan search, filter (online/offline), dan sort
+- Detail modal per device dengan riwayat data
+- Adaptive offline detection: threshold otomatis berdasarkan interval kirim data
 
 ### 🔔 Alerts
 
-- Server-side filtering (search, severity, status)
-- Acknowledge alert dengan loading state
-- Polling 30 detik
-- Responsive card layout di mobile
+- Pill button filter untuk severity (Critical, Warning) dan status (New, Acknowledged)
+- Search dengan debounce 300ms
+- Acknowledge alert dengan optimistic update
+- Auto-generated saat device offline atau threshold terlewati
+- Polling 30 detik, responsive card di mobile
 
 ### 📊 Reports
 
 - 3 tipe laporan: Daily Summary, Detailed Logs, Alerts Report
-- Filter tanggal, lokasi, severity
+- Date range picker dengan quick select (7/14/30 hari)
 - Export CSV & PDF dengan format:
   - Tanggal WIB (DD/MM/YYYY HH:mm:ss)
   - Unit label (°C, %)
@@ -242,8 +256,10 @@ Dashboard dilindungi password. Masukkan password yang sesuai dengan `ADMIN_KEY` 
 
 ### ⚙️ Settings (Admin)
 
-- Konfigurasi threshold suhu (min/max)
-- Konfigurasi threshold humidity (min/max)
+- Konfigurasi threshold suhu & humidity (min/max)
+- Data retention: 7–365 hari (default 365 hari)
+- Auto cleanup: hapus data lama otomatis via cron daily 03:00 WIB
+- Preview jumlah data yang akan dihapus sebelum execute
 - Auto-save dengan Toast feedback
 
 ---
@@ -252,38 +268,46 @@ Dashboard dilindungi password. Masukkan password yang sesuai dengan `ADMIN_KEY` 
 
 ### Dashboard APIs
 
-| Method | Endpoint                    | Deskripsi                  |
-| ------ | --------------------------- | -------------------------- |
-| GET    | `/api/dashboard/overview`   | Overview semua device      |
-| GET    | `/api/dashboard/monitoring` | Data monitoring real-time  |
-| GET    | `/api/dashboard/alerts`     | Alerts dengan filter      |
-| GET    | `/api/dashboard/chart`      | Data charts/grafik        |
-| GET    | `/api/dashboard/devices`    | Daftar devices & status    |
-| GET    | `/api/dashboard/reports`    | Data laporan               |
+| Method | Endpoint | Deskripsi |
+|--------|----------|-----------|
+| GET | `/api/dashboard/overview` | Overview semua device |
+| GET | `/api/dashboard/monitoring` | Data monitoring real-time |
+| GET | `/api/dashboard/alerts` | Alerts dengan filter |
+| GET | `/api/dashboard/chart` | Data charts/grafik (time-aligned) |
+| GET | `/api/dashboard/devices` | Daftar devices & status |
+| GET | `/api/dashboard/daily-stats` | Statistik harian |
 
 ### Reports APIs
 
-| Method | Endpoint              | Deskripsi                          |
-| ------ | --------------------- | ---------------------------------- |
-| GET    | `/api/reports/summary`  | Daily summary statistics          |
-| GET    | `/api/reports/logs`     | Detailed sensor logs              |
-| GET    | `/api/reports/alerts`   | Alert report (dengan stats total) |
+| Method | Endpoint | Deskripsi |
+|--------|----------|-----------|
+| GET | `/api/reports/summary` | Daily summary statistics |
+| GET | `/api/reports/logs` | Detailed sensor logs |
+| GET | `/api/reports/alerts` | Alert report (dengan stats total) |
 
 ### Sensor APIs
 
-| Method | Endpoint                | Deskripsi              |
-| ------ | ----------------------- | ---------------------- |
-| GET    | `/api/sensors`          | Daftar semua sensor    |
-| POST   | `/api/sensors`          | Tambah sensor baru     |
-| GET    | `/api/sensors/:id`      | Detail sensor spesifik |
-| POST   | `/api/sensors/:id/data` | Kirim data dari ESP32  |
+| Method | Endpoint | Deskripsi |
+|--------|----------|-----------|
+| GET | `/api/sensors` | Daftar semua sensor |
+| POST | `/api/sensors` | Tambah sensor baru |
+| POST | `/api/sensors/:id/data` | Kirim data dari ESP32 |
 
 ### Auth APIs
 
-| Method | Endpoint                    | Deskripsi                     |
-| ------ | --------------------------- | ----------------------------- |
-| POST   | `/api/auth/verify-admin`    | Verifikasi password admin     |
-| GET    | `/api/auth/logout`          | Hapus session cookie          |
+| Method | Endpoint | Deskripsi |
+|--------|----------|-----------|
+| POST | `/api/auth/verify-admin` | Verifikasi password admin |
+| POST | `/api/auth/check-session` | Validasi session aktif |
+| GET | `/api/auth/logout` | Hapus session cookie |
+
+### Settings & Cleanup APIs
+
+| Method | Endpoint | Deskripsi |
+|--------|----------|-----------|
+| GET | `/api/settings` | Ambil konfigurasi settings |
+| PATCH | `/api/settings/update` | Update settings (admin only) |
+| GET | `/api/settings/cleanup?execute=true&token=KEY` | Jalankan cleanup data lama |
 
 ---
 
@@ -304,8 +328,9 @@ Dashboard dilindungi password. Masukkan password yang sesuai dengan `ADMIN_KEY` 
 
 ### Firmware Configuration
 
-- Sensor membaca data setiap 30 detik
-- Kirim ke API setiap 5 menit atau saat ada perubahan >1°C / >5% RH
+- Sensor membaca data setiap **30 detik**
+- Kirim ke API setiap **1 menit** atau saat ada perubahan >1°C / >5% RH
+- Retry **3x** jika gagal kirim, reboot setelah **5 kegagalan berturut-turut**
 - Auto-reconnect jika WiFi terputus
 - Format data: JSON dengan `temperature`, `humidity`, `deviceId`
 
@@ -321,7 +346,7 @@ Dashboard dilindungi password. Masukkan password yang sesuai dengan `ADMIN_KEY` 
 ## 📦 Build untuk Production
 
 ```bash
-# Build aplikasi
+# Build aplikasi (otomatis generate Prisma client)
 npm run build
 
 # Jalankan production server
@@ -337,10 +362,22 @@ npm start
    - `DIRECT_URL`
    - `ADMIN_KEY` → password dashboard
 4. Deploy
+5. (Optional) Aktifkan Vercel Cron untuk auto cleanup daily 03:00 WIB
 
 ---
 
 ## 🐛 Troubleshooting
+
+### Prisma EPERM Error (Windows)
+
+```
+EPERM: operation not permitted, rename 'query_engine-windows.dll.node.tmp...'
+```
+
+**Solusi:**
+- Tutup semua proses Node.js (termasuk `npm run dev`, VS Code terminal, dll)
+- Hapus file `.tmp` di `node_modules/.prisma/client/`
+- Jalankan `npx prisma generate` ulang
 
 ### Database Connection Error
 
@@ -361,6 +398,7 @@ Error: connect ECONNREFUSED
 - Restart server setelah mengubah `.env`
 - Untuk Vercel: set di dashboard → Environment Variables
 - Password bersifat case-sensitive
+- Cek rate limiting: setelah 5 percobaan gagal, akun dikunci 15 menit
 
 ### Sensor Data Tidak Muncul
 
@@ -369,13 +407,15 @@ Error: connect ECONNREFUSED
 - Verify API endpoint di firmware sudah benar
 - Cek network requests di browser DevTools
 - Lihat server logs: `npm run dev`
+- Device otomatis ditandai offline setelah tidak ada data selama threshold adaptif
 
 ### Device Offline
 
 **Solusi:**
 - Cek koneksi WiFi ESP32
 - Verify API endpoint `/api/sensors/:id/data` accessible
-- Check firewall rules
+- Adaptive offline detection: threshold menyesuaikan dengan interval kirim data
+- Cek alert history di halaman Alerts untuk timeline kejadian
 - Restart device atau reset WiFi
 
 ---
@@ -386,12 +426,13 @@ Error: connect ECONNREFUSED
 thermal-monitoring-system/
 ├── src/
 │   ├── app/
-│   │   ├── api/                 # API Routes
-│   │   │   ├── auth/            # Auth (verify-admin, logout)
-│   │   │   ├── dashboard/       # Dashboard APIs
-│   │   │   ├── reports/         # Reports APIs
-│   │   │   └── sensors/         # Sensor APIs
-│   │   ├── dashboard/           # Dashboard Pages
+│   │   ├── api/                     # API Routes
+│   │   │   ├── auth/                # Auth (verify-admin, check-session, logout)
+│   │   │   ├── dashboard/           # Dashboard APIs (overview, chart, monitoring, alerts, devices, daily-stats)
+│   │   │   ├── reports/             # Reports APIs (summary, logs, alerts)
+│   │   │   ├── sensors/             # Sensor APIs (CRUD + data ingestion)
+│   │   │   └── settings/            # Settings API + cleanup endpoint
+│   │   ├── dashboard/               # Dashboard Pages
 │   │   │   ├── monitoring/
 │   │   │   ├── alerts/
 │   │   │   ├── devices/
@@ -400,26 +441,29 @@ thermal-monitoring-system/
 │   │   ├── globals.css
 │   │   ├── layout.tsx
 │   │   └── page.tsx
-│   ├── components/              # React Components
-│   │   ├── cards/
-│   │   ├── charts/
-│   │   ├── tables/
-│   │   ├── alerts/
-│   │   ├── devices/
-│   │   ├── filters/
-│   │   └── ui/                  # Toast, dll
-│   ├── hooks/                   # Custom hooks
-│   ├── lib/                     # Utilities & helpers
-│   ├── services/                # API clients
-│   └── types/                   # TypeScript types
+│   ├── components/                  # React Components
+│   │   ├── cards/                   # Stat cards dengan gradient accent
+│   │   ├── charts/                  # Recharts (Comparison, DailyTrend, DeviceDetail, Realtime)
+│   │   ├── tables/                  # Data tables
+│   │   ├── alerts/                  # AlertFilter, AlertRow, AlertTable, AlertSummary
+│   │   ├── devices/                 # DeviceGrid, DeviceFilter, DeviceDetailModal
+│   │   ├── monitoring/              # MonitoringHeader, MonitoringCard, MonitoringGrid, EnhancedMonitoringChart
+│   │   ├── filters/                 # TimeRangeFilter
+│   │   ├── layout/                  # Sidebar, Header
+│   │   └── ui/                      # Toast, LoadingSpinner, dll
+│   ├── hooks/                       # Custom hooks (useMonitoringData, useSystemStatus)
+│   ├── lib/                         # Utilities (auth, prisma, chartUtils, formatWIB, deviceStatus, dll)
+│   ├── services/                    # API clients (alertService)
+│   └── types/                       # TypeScript types
 ├── prisma/
 │   └── schema.prisma
 ├── public/
 ├── .env.example
+├── vercel.json                      # Cron config untuk auto cleanup
 ├── package.json
 ├── tsconfig.json
 ├── next.config.ts
-└── ADMIN_ACCESS_SETUP.md
+└── README.md
 ```
 
 ---
@@ -427,16 +471,22 @@ thermal-monitoring-system/
 ## 📈 Roadmap
 
 ### ✅ Tersedia
-- ✅ Admin authentication dengan httpOnly cookie
-- ✅ Dashboard overview real-time
-- ✅ Monitoring dengan grafik interaktif
-- ✅ Alert management dengan server-side filtering
-- ✅ Report generation (CSV & PDF)
-- ✅ Responsive layout (mobile, tablet, desktop)
-- ✅ Toast notification system
-- ✅ Settings management
+
+- ✅ Admin authentication dengan httpOnly cookie + rate limiting
+- ✅ Dashboard overview real-time dengan gradient cards
+- ✅ Monitoring dengan chart adaptif, threshold zones, sparklines
+- ✅ Alert management dengan pill button filter dan optimistic update
+- ✅ Device management dengan search, filter, sort, detail modal
+- ✅ Report generation (CSV & PDF) dengan date range picker
+- ✅ Responsive layout (mobile, tablet, desktop) + dark mode
+- ✅ Toast notification system (success, error, warning, info)
+- ✅ Settings management dengan data retention config
+- ✅ Adaptive offline detection otomatis
+- ✅ Auto cleanup data via Vercel cron (daily 03:00 WIB)
+- ✅ WIB timezone (UTC+7) konsisten di semua komponen
 
 ### 🔄 Rencana ke Depan
+
 - [ ] Multi-language support (EN, ID)
 - [ ] Email & SMS notifications
 - [ ] Advanced analytics & ML predictions
@@ -447,11 +497,40 @@ thermal-monitoring-system/
 
 ---
 
+## 📝 Changelog
+
+### v1.1.0 (28 Juni 2026)
+
+- ✅ Redesign Monitoring page (adaptive chart, WIB timezone, sparklines)
+- ✅ Redesign Alerts page (pill button filter, gradient cards, acknowledge optimistic)
+- ✅ Device page enhancement (search, filter, sort, detail modal)
+- ✅ Dashboard page upgrade (gradient header, loading skeleton, fix React 19 effects)
+- ✅ Server-side auth hardening (rate limiting, check-session API, session validation)
+- ✅ Data retention & auto cleanup (Vercel cron, configurable 7-365 hari)
+- ✅ Adaptive offline detection (threshold berdasarkan interval kirim data)
+- ✅ Chart time alignment (regular buckets per-menit, ISO timestamp)
+- ✅ WIB timezone konsisten (Header, Monitoring, Reports, Alerts)
+- ✅ AlertFilter: dropdown → pill button (konsisten DeviceFilter)
+- ✅ Toast notification: tambah type "info"
+- ✅ Prisma schema cleanup (hapus archivedAt kolom)
+- ✅ Settings page: back button, data retention UI, cleanup preview
+
+### v1.0.0 (24 Juni 2026)
+
+- ✅ Initial release dengan semua halaman utama (Dashboard, Monitoring, Devices, Alerts, Reports, Settings)
+- ✅ Admin authentication dengan httpOnly cookie
+- ✅ Export CSV & PDF dengan format WIB
+- ✅ Responsive layout mobile + desktop
+- ✅ Toast notification system
+
+---
+
 ## 👥 Tim Pengembang
 
 - **Project Owner**: Coolman / Facility Support Team
 - **Area**: Technical Support & Facility Management
-- **Status**: Production Ready (v1.0.0)
+- **Status**: Production Ready
+- **Version**: v1.1.0
 - **Last Updated**: Juni 2026
 
 ---
@@ -459,7 +538,8 @@ thermal-monitoring-system/
 ## 📝 Catatan Penting
 
 ⚠️ **ADMIN_KEY** wajib di-set di environment variable Vercel untuk production
-💾 **Backup database** secara berkala untuk keamanan data historis
+💾 **Data retention** default 1 tahun (365 hari) — dapat diubah di Settings
+🔄 **Auto cleanup** berjalan daily pukul 03:00 WIB via Vercel cron
 🔐 **Jangan commit `.env`** ke Git — gunakan `.env.example`
 🔄 **Update firmware ESP32** secara berkala untuk patch security
 📞 **Support**: Hubungi tim Technical Support untuk bantuan
