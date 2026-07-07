@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkAdminSession } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import { validateSettings } from "@/lib/settingsUtils";
 
 export async function PATCH(request: NextRequest) {
@@ -46,7 +47,7 @@ export async function PATCH(request: NextRequest) {
       message: "Settings updated successfully",
     });
   } catch (error) {
-    console.error("PATCH /api/settings/update error:", error);
+    logger.error("SETTINGS_UPDATE", error);
     return NextResponse.json(
       { success: false, error: "Failed to update settings" },
       { status: 500 }

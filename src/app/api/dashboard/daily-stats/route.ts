@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -138,7 +139,7 @@ export async function GET() {
       },
     );
   } catch (error) {
-    console.error("GET /api/dashboard/daily-stats error:", error);
+    logger.error("DAILY_STATS", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch daily stats" },
       { status: 500 },

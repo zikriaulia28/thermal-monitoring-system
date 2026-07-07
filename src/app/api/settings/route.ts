@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import { DEFAULT_SETTINGS } from "@/types/settings";
 
 export async function GET() {
@@ -19,7 +20,7 @@ export async function GET() {
       data: settings,
     });
   } catch (error) {
-    console.error("GET /api/settings error:", error);
+    logger.error("SETTINGS", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch settings" },
       { status: 500 }

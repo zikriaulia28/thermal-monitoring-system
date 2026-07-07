@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
 import { getOfflineThresholdMs } from "@/lib/deviceStatus";
 
 export const dynamic = "force-dynamic";
@@ -151,7 +152,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("Sensor API Error:", error);
+    logger.error("SENSOR", error);
     return NextResponse.json({ success: false, error: "Internal Server Error" }, { status: 500 });
   }
 }

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import { NextResponse } from "next/server";
 import { getOfflineThresholdMs } from "@/lib/deviceStatus";
 
@@ -10,13 +11,6 @@ function getIntervalMinutes(hours: number): number {
   if (hours <= 6) return 5;
   if (hours <= 12) return 10;
   return 30; // 24h
-}
-
-/** Truncate timestamp to a regular bucket (e.g., every 5 minutes). */
-function truncateToInterval(date: Date, intervalMinutes: number): Date {
-  const ms = date.getTime();
-  const bucket = intervalMinutes * 60 * 1000;
-  return new Date(Math.floor(ms / bucket) * bucket);
 }
 
 export async function GET(request: Request) {
@@ -39,47 +33,64 @@ export async function GET(request: Request) {
     const settings = await prisma.settings.findFirst();
     const intervalSeconds = settings?.monitoringIntervalSeconds;
 
-    const devices = await prisma.device.findMany({
-      include: {
-        logs: {
-          where: { createdAt: { gte: fromDate, lte: now } },
-          orderBy: { createdAt: "asc" },
-        },
-      },
-    });
+    // ── DB-level aggregation ──
+    const rows = await prisma.$queryRawUnsafe<Array<{
+      device_id: string;
+      location: string;
+      last_seen: Date | null;
+      bucket: Date;
+      avg_t: number;
+      avg_h: number;
+    }>>(`
+      SELECT
+        d."deviceId" AS device_id,
+        d."location",
+        d."lastSeen" AS last_seen,
+        date_trunc('minute', sl."createdAt")
+          - (EXTRACT(MINUTE FROM sl."createdAt")::INT % $3) * INTERVAL '1 minute' AS bucket,
+        AVG(sl."temperature")::FLOAT AS avg_t,
+        AVG(sl."humidity")::FLOAT AS avg_h
+      FROM "Device" d
+      LEFT JOIN "SensorLog" sl
+        ON sl."deviceId" = d."deviceId"
+        AND sl."createdAt" >= $1::TIMESTAMP
+        AND sl."createdAt" <= $2::TIMESTAMP
+      GROUP BY d."deviceId", d."location", d."lastSeen", bucket
+      ORDER BY d."deviceId", bucket
+    `, fromDate, now, intervalMinutes);
 
-    const result = devices.map((device) => {
-      const lastSeen = device.lastSeen?.getTime();
-      const isOnline = lastSeen !== undefined && Date.now() - lastSeen < getOfflineThresholdMs(intervalSeconds);
+    const deviceMap = new Map<string, {
+      id: string;
+      name: string;
+      location: string;
+      status: string;
+      lastSeen: Date | null;
+      readings: Array<{ time: string; temperature: number; humidity: number }>;
+    }>();
 
-      // Aggregate readings into regular time buckets
-      const buckets = new Map<number, { temps: number[]; hums: number[] }>();
-
-      for (const log of device.logs) {
-        const bucketMs = truncateToInterval(log.createdAt, intervalMinutes).getTime();
-        if (!buckets.has(bucketMs)) buckets.set(bucketMs, { temps: [], hums: [] });
-        const b = buckets.get(bucketMs)!;
-        b.temps.push(log.temperature);
-        b.hums.push(log.humidity);
+    for (const row of rows) {
+      if (!row.device_id) continue;
+      if (!deviceMap.has(row.device_id)) {
+        const isOnline = row.last_seen !== null && Date.now() - row.last_seen.getTime() < getOfflineThresholdMs(intervalSeconds);
+        deviceMap.set(row.device_id, {
+          id: row.device_id,
+          name: row.location,
+          location: row.location,
+          status: isOnline ? "online" : "offline",
+          lastSeen: row.last_seen,
+          readings: [],
+        });
       }
+      if (row.bucket) {
+        deviceMap.get(row.device_id)!.readings.push({
+          time: row.bucket.toISOString(),
+          temperature: Number(row.avg_t.toFixed(2)),
+          humidity: Number(row.avg_h.toFixed(2)),
+        });
+      }
+    }
 
-      const readings = Array.from(buckets.entries())
-        .sort(([a], [b]) => a - b)
-        .map(([timeMs, { temps, hums }]) => ({
-          time: new Date(timeMs).toISOString(),
-          temperature: Number((temps.reduce((s, v) => s + v, 0) / temps.length).toFixed(2)),
-          humidity: Number((hums.reduce((s, v) => s + v, 0) / hums.length).toFixed(2)),
-        }));
-
-      return {
-        id: device.deviceId,
-        name: device.location,
-        location: device.location,
-        status: isOnline ? "online" : "offline",
-        lastSeen: device.lastSeen,
-        readings,
-      };
-    });
+    const result = Array.from(deviceMap.values());
 
     return NextResponse.json(result, {
       headers: {
@@ -89,7 +100,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error(error);
+    logger.error("MONITORING", error);
     return NextResponse.json({ success: false, message: "Failed fetch monitoring" }, { status: 500 });
   }
 }

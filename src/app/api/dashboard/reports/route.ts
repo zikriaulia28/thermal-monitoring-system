@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
@@ -35,7 +36,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(reports);
   } catch (error) {
-    console.error(error);
+    logger.error("DASHBOARD_REPORTS", error);
 
     return NextResponse.json(
       {

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { logger } from "@/lib/logger";
 
 function formatDateWIB(date: Date): string {
   const d = new Date(date);
@@ -93,7 +94,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error('GET /api/reports/logs error:', error);
+    logger.error("REPORT_LOGS", error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch detailed logs' },
       { status: 500 }

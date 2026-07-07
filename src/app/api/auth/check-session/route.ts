@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { checkAdminSession } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +20,7 @@ export async function GET() {
     const isValid = await checkAdminSession();
     return NextResponse.json({ valid: isValid });
   } catch (error) {
-    console.error("GET /api/auth/check-session error:", error);
+    logger.error("AUTH_CHECK", error);
     return NextResponse.json({ valid: false }, { status: 500 });
   }
 }

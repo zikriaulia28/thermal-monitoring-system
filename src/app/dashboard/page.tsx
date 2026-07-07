@@ -74,7 +74,9 @@ export default function DashboardPage() {
       }
     }
     fetchData();
-    const interval = setInterval(fetchData, 30000);
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') fetchData();
+    }, 60000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [timeRange, customDateFrom, customDateTo]);
 

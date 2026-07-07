@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 
@@ -69,7 +70,7 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
-    console.error("GET /api/dashboard/alerts error:", error);
+    logger.error("ALERTS_GET", error);
 
     return NextResponse.json(
       {
@@ -101,7 +102,7 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error("PATCH /api/dashboard/alerts error:", error);
+    logger.error("ALERTS_PATCH", error);
     return NextResponse.json(
       { success: false, message: "Failed to acknowledge alert" },
       { status: 500 },

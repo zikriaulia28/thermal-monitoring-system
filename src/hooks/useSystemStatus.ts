@@ -9,7 +9,7 @@ interface SystemStatus {
   unacknowledgedAlerts: number;
 }
 
-export function useSystemStatus(refreshInterval: number = 30000) {
+export function useSystemStatus(refreshInterval: number = 60000) {
   const [status, setStatus] = useState<SystemStatus>({
     totalDevices: 0,
     onlineDevices: 0,
@@ -49,7 +49,9 @@ export function useSystemStatus(refreshInterval: number = 30000) {
     };
 
     fetchStatus();
-    const interval = setInterval(fetchStatus, refreshInterval);
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') fetchStatus();
+    }, refreshInterval);
 
     return () => clearInterval(interval);
   }, [refreshInterval]);

@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { logger } from "@/lib/logger";
 import { NextResponse } from "next/server";
 import { getOfflineThresholdMs } from "@/lib/deviceStatus";
 

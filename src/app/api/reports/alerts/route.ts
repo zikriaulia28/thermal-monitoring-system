@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import { logger } from "@/lib/logger";
 
 function formatDateWIB(date: Date): string {
   const d = new Date(date);
@@ -94,7 +95,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error('GET /api/reports/alerts error:', error);
+    logger.error("REPORT_ALERTS", error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch alerts report' },
       { status: 500 }

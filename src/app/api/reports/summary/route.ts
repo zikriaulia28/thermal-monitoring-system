@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { summarizeByDay } from '@/lib/reportUtils';
+import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
   try {
@@ -93,7 +94,7 @@ export async function GET(request: Request) {
       },
     });
   } catch (error) {
-    console.error('GET /api/reports/summary error:', error);
+    logger.error("REPORT_SUMMARY", error);
     return NextResponse.json(
       { success: false, error: 'Failed to generate summary report' },
       { status: 500 }

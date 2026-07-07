@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyPassword, createAdminSession } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 
 // ─── In-Memory Rate Limiter ───────────────────────────────
 // Maksimal 5 percobaan gagal per IP per 15 menit.
@@ -108,7 +109,7 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error("POST /api/auth/verify-admin error:", error);
+    logger.error("AUTH_VERIFY", error);
     return NextResponse.json(
       { success: false, error: "Internal server error" },
       { status: 500 },
