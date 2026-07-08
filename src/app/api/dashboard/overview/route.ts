@@ -1,5 +1,4 @@
 import { prisma } from "@/lib/prisma";
-import { logger } from "@/lib/logger";
 import { NextResponse } from "next/server";
 import { getOfflineThresholdMs } from "@/lib/deviceStatus";
 
@@ -36,10 +35,17 @@ export async function GET() {
   const avgHum =
     latestLogs.reduce((a, b) => a + b.humidity, 0) / (latestLogs.length || 1);
 
-  return NextResponse.json({
-    online,
-    offline,
-    avgTemperature: avgTemp,
-    avgHumidity: avgHum,
-  });
+  return NextResponse.json(
+    {
+      online,
+      offline,
+      avgTemperature: avgTemp,
+      avgHumidity: avgHum,
+    },
+    {
+      headers: {
+        "Cache-Control": "public, s-maxage=30, stale-while-revalidate=60",
+      },
+    },
+  );
 }

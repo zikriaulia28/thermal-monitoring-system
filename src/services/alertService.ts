@@ -43,7 +43,8 @@ export async function getAlerts(
   }
 
   const response = await fetch(`/api/dashboard/alerts?${params.toString()}`, {
-    cache: "no-store",
+    cache: "force-cache",
+    next: { revalidate: 30 },
   });
 
   if (!response.ok) {

@@ -4,7 +4,8 @@ import { TimeRange } from "@/types/filter";
 
 export async function getOverview(): Promise<DashboardOverview> {
   const res = await fetch("/api/dashboard/overview", {
-    cache: "no-store",
+    cache: "force-cache",
+    next: { revalidate: 60 },
   });
 
   if (!res.ok) {
@@ -32,7 +33,8 @@ export async function getChartData(
   }
 
   const res = await fetch(`/api/dashboard/chart?${params.toString()}`, {
-    cache: "no-store",
+    cache: "force-cache",
+    next: { revalidate: 60 },
   });
 
   if (!res.ok) {
@@ -44,7 +46,8 @@ export async function getChartData(
 
 export async function getDailyStats(): Promise<DailyStatsResponse> {
   const res = await fetch("/api/dashboard/daily-stats", {
-    cache: "no-store",
+    cache: "force-cache",
+    next: { revalidate: 120 },
   });
 
   if (!res.ok) {

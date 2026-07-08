@@ -22,8 +22,8 @@ export function useSystemStatus(refreshInterval: number = 60000) {
     const fetchStatus = async () => {
       try {
         const [overviewRes, alertsRes] = await Promise.all([
-          fetch("/api/dashboard/overview", { cache: "no-store" }),
-          fetch("/api/dashboard/alerts", { cache: "no-store" }),
+          fetch("/api/dashboard/overview"),
+          fetch("/api/dashboard/alerts"),
         ]);
 
         if (overviewRes.ok && alertsRes.ok) {

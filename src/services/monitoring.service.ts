@@ -5,7 +5,8 @@ export async function getMonitoringData(range: MonitoringTimeRange = "1h"): Prom
   const params = new URLSearchParams({ range });
   
   const res = await fetch(`/api/dashboard/monitoring?${params.toString()}`, {
-    cache: "no-store",
+    cache: "force-cache",
+    next: { revalidate: 60 },
   });
 
   if (!res.ok) {
