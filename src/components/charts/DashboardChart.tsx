@@ -66,6 +66,33 @@ export default function DashboardChart({ devices, isLoading = false }: Props) {
     [chartData],
   );
 
+  const yDomain = useMemo(() => {
+    if (chartData.length === 0) return isTemperature ? [15, 40] : [0, 100];
+
+    let dataMin = Infinity;
+    let dataMax = -Infinity;
+
+    for (const row of chartData) {
+      for (const key of keys) {
+        const val = row[key] as number | null | undefined;
+        if (val != null) {
+          if (val < dataMin) dataMin = val;
+          if (val > dataMax) dataMax = val;
+        }
+      }
+    }
+
+    if (!isFinite(dataMin) || !isFinite(dataMax)) {
+      return isTemperature ? [15, 40] : [0, 100];
+    }
+
+    const padding = Math.max((dataMax - dataMin) * 0.15, isTemperature ? 2 : 5);
+    return [
+      Math.floor((dataMin - padding) * 10) / 10,
+      Math.ceil((dataMax + padding) * 10) / 10,
+    ];
+  }, [chartData, keys, isTemperature]);
+
   return (
     <div className="h-full flex flex-col rounded-xl border border-border bg-card shadow-sm overflow-hidden">
       <div className="px-5 pt-5 pb-3 border-b border-border">
@@ -130,6 +157,7 @@ export default function DashboardChart({ devices, isLoading = false }: Props) {
                 tickLine={false}
                 axisLine={false}
                 width={36}
+                domain={yDomain}
               />
               <Tooltip
                 contentStyle={{
