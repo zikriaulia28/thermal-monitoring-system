@@ -2,7 +2,7 @@
 
 import { AlertTriangle, Info, ShieldAlert } from "lucide-react";
 import Link from "next/link";
-import { formatWIB } from "@/lib/formatWIB";
+import { formatWIB, formatDurationSince } from "@/lib/formatWIB";
 
 type Severity = "CRITICAL" | "WARNING" | "INFO" | string;
 
@@ -80,7 +80,7 @@ export default function EventLog({ alerts, isLoading = false }: EventLogProps) {
                         {a.location}
                       </span>
                       <span className="shrink-0 text-[11px] text-muted-foreground font-data whitespace-nowrap">
-                        {formatWIB(a.createdAt, "medium")}
+                        {formatWIB(a.createdAt, "medium")} · {formatDurationSince(a.createdAt)}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5 break-words">

@@ -56,6 +56,7 @@ export default function AlertTable({
                   <th className="p-4">Device</th>
                   <th className="p-4">Severity</th>
                   <th className="p-4">Message</th>
+                  <th className="p-4">Duration</th>
                   <th className="p-4">Status</th>
                   <th className="p-4">Action</th>
                 </tr>
@@ -134,6 +135,14 @@ export default function AlertTable({
                     <p className="text-sm text-muted-foreground line-clamp-2">
                       {alert.message}
                     </p>
+                  </div>
+
+                  {/* Duration */}
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-data mt-1">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {formatWIB(alert.createdAt, "medium")} · {formatDurationSince(alert.createdAt)}
                   </div>
 
                   {/* Action */}

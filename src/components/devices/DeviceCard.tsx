@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Thermometer, Droplets, AlertTriangle, Eye, Clock, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Device } from "@/types/device";
 import { formatWIB } from "@/lib/formatWIB";
+import { useThresholds } from "@/hooks/useThresholds";
 import DeviceStatusBadge from "./DeviceStatusBadge";
 import DeviceDetailModal from "./DeviceDetailModal";
 
@@ -19,6 +20,19 @@ export default function DeviceCard({ device }: Props) {
   const humCritical = latest && (latest.humidity > 70 || latest.humidity < 30);
   const isOffline = device.status === "offline";
   const isAlert = isOffline || tempCritical || humCritical;
+
+  const { tempMin, tempMax, humMin, humMax } = useThresholds();
+  // Margin ke batas terdekat (early warning)
+  const marginTemp =
+    latest != null
+      ? Math.min(Math.abs(latest.temperature - tempMin), Math.abs(latest.temperature - tempMax))
+      : Infinity;
+  const marginHum =
+    latest != null
+      ? Math.min(Math.abs(latest.humidity - humMin), Math.abs(latest.humidity - humMax))
+      : Infinity;
+  const nearBreach =
+    !isAlert && (marginTemp < 2 || marginHum < 5);
 
   // Calculate temperature trend (last 3 readings)
   const readings = device.readings.slice(-5);
@@ -65,7 +79,7 @@ export default function DeviceCard({ device }: Props) {
         <DeviceStatusBadge status={device.status} />
       </div>
 
-      {/* ── Alert Warning ── */}
+      {/* ── Alert Warning / Near Breach ── */}
       {isAlert && (
         <div className="flex items-center gap-2 px-3 py-2 bg-red-100 dark:bg-red-900/20 rounded-lg mb-3">
           <AlertTriangle className="w-3.5 h-3.5 text-red-600 dark:text-red-400 shrink-0" />
@@ -77,6 +91,17 @@ export default function DeviceCard({ device }: Props) {
                 : tempCritical
                   ? "Temperature Alert"
                   : "Humidity Alert"}
+          </span>
+        </div>
+      )}
+
+      {nearBreach && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-amber-100 dark:bg-amber-900/20 rounded-lg mb-3">
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+          <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
+            ⚠ Nyaris breach
+            {marginTemp < 2 && ` (${marginTemp.toFixed(1)}°C ke batas)`}
+            {marginHum < 5 && ` (${marginHum.toFixed(0)}% ke batas)`}
           </span>
         </div>
       )}

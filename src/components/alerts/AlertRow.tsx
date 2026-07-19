@@ -1,5 +1,5 @@
 import { Alert } from "@/types/alert";
-import { formatWIB } from "@/lib/formatWIB";
+import { formatWIB, formatDurationSince } from "@/lib/formatWIB";
 
 interface Props {
   alert: Alert;
@@ -98,6 +98,14 @@ export default function AlertRow({ alert, onAcknowledge, isLoading }: Props) {
         <div className="flex items-center gap-2">
           <span className="text-sm">{severityConfig.icon}</span>
           <span>{alert.message}</span>
+        </div>
+      </td>
+
+      {/* Duration */}
+      <td className="whitespace-nowrap p-4">
+        <div className="flex items-center gap-1.5 text-sm font-data text-slate-600 dark:text-slate-400">
+          <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          {formatDurationSince(alert.createdAt)}
         </div>
       </td>
 
