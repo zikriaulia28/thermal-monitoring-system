@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 import { useSystemStatus } from "@/hooks/useSystemStatus";
 
 import {
@@ -14,6 +13,8 @@ import {
   Settings,
   X,
   Zap,
+  Wifi,
+  WifiOff,
 } from "lucide-react";
 
 interface Props {
@@ -176,7 +177,6 @@ export default function Sidebar({ open, onClose }: Props) {
 }
 
 function WifiIcon({ online }: { online: boolean }) {
-  const { Wifi, WifiOff } = require("lucide-react");
   return online
     ? <Wifi size={14} className="text-[var(--cpems-online)]" />
     : <WifiOff size={14} className="text-[var(--cpems-offline)]" />;

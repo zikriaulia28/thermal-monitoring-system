@@ -21,6 +21,7 @@ import EventTable from "@/components/tables/EventTable";
 import TimeRangeFilter from "@/components/filters/TimeRangeFilter";
 
 import { TimeRange } from "@/types/filter";
+import { Device } from "@/types/device";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -105,7 +106,7 @@ export default function DashboardPage() {
     let hottest: { name: string; location: string; temp: number } | null = null;
     let coldest: { name: string; location: string; temp: number } | null = null;
 
-    (devices as any[]).forEach((d: any) => {
+    (devices as Device[]).forEach((d: Device) => {
       const r = d.readings?.at(-1);
       if (!r || r.temperature == null) return;
       const entry = { name: d.name || d.id, location: d.location || "-", temp: r.temperature };
