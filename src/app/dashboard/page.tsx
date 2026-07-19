@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 
 import StatCard from "@/components/cards/StatCard";
-import RealtimeChart from "@/components/charts/RealtimeChart";
 import DeviceMetrics from "@/components/charts/DeviceMetrics";
 import EventLog from "@/components/tables/EventLog";
 import TimeRangeFilter from "@/components/filters/TimeRangeFilter";
@@ -291,18 +290,8 @@ export default function DashboardPage() {
       )}
 
       {/* MAIN CONTENT */}
-      <div className="w-full grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
-        <div className="w-full xl:col-span-2">
-          <RealtimeChart
-            devices={devices ?? []}
-            isLoading={isLoading}
-            timeRange={timeRange}
-            onTabChange={() => {}}
-            customDateFrom={customDateFrom}
-            customDateTo={customDateTo}
-          />
-        </div>
-        <div className="w-full xl:col-span-1">
+      <div className="w-full grid grid-cols-1 gap-4 sm:gap-6">
+        <div className="w-full">
           <EventLog alerts={alertsRes?.data ?? []} isLoading={isLoading} />
         </div>
       </div>
