@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 const MUTE_KEY = "cpems-alarm-muted";
-const POLL_MS = 30000; // cek critical count tiap 30 detik
+const POLL_MS = 60000; // cek critical count tiap 60 detik
 const BEEP_EVERY_MS = 4000; // ulangi beep tiap 4 detik selama critical aktif
 
 // ── localStorage store (SSR-safe via useSyncExternalStore) ──

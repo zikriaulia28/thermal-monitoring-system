@@ -32,19 +32,19 @@ export default function DashboardPage() {
   const { data: overview, error, isLoading } = useSWR(
     "/api/dashboard/overview",
     fetcher,
-    { refreshInterval: 60000, revalidateOnFocus: false },
+    { refreshInterval: 120000, revalidateOnFocus: false },
   );
 
   const { data: devices } = useSWR(
     () => `/api/dashboard/chart?${chartParams.toString()}`,
     fetcher,
-    { refreshInterval: 60000, revalidateOnFocus: false },
+    { refreshInterval: 120000, revalidateOnFocus: false },
   );
 
   const { data: alertsRes } = useSWR(
-    "/api/dashboard/alerts",
+    "/api/dashboard/alerts?summary=true",
     fetcher,
-    { refreshInterval: 60000, revalidateOnFocus: false },
+    { refreshInterval: 120000, revalidateOnFocus: false },
   );
 
   const dailyParams = new URLSearchParams({ range: "realtime" });
@@ -52,7 +52,7 @@ export default function DashboardPage() {
   const { data: dailyRes } = useSWR(
     () => `/api/dashboard/daily-stats?${dailyParams.toString()}`,
     fetcher,
-    { refreshInterval: 120000, revalidateOnFocus: false },
+    { refreshInterval: 300000, revalidateOnFocus: false },
   );
 
   const dailyStats = dailyRes?.stats ?? [];

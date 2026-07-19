@@ -55,7 +55,7 @@ export default function MonitoringPage() {
 
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') load();
-    }, 60000);
+    }, 120000);
 
     return () => {
       cancelled = true;

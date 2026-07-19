@@ -35,7 +35,7 @@ function AlertsContent() {
         status,
       }),
     {
-      refreshInterval: 60000,
+      refreshInterval: 120000,
       revalidateOnFocus: true,
       revalidateOnReconnect: true,
       dedupingInterval: 2000,

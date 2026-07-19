@@ -9,7 +9,7 @@ interface SystemStatus {
   unacknowledgedAlerts: number;
 }
 
-export function useSystemStatus(refreshInterval: number = 60000) {
+export function useSystemStatus(refreshInterval: number = 120000) {
   const [status, setStatus] = useState<SystemStatus>({
     totalDevices: 0,
     onlineDevices: 0,
@@ -23,22 +23,18 @@ export function useSystemStatus(refreshInterval: number = 60000) {
       try {
         const [overviewRes, alertsRes] = await Promise.all([
           fetch("/api/dashboard/overview"),
-          fetch("/api/dashboard/alerts"),
+          fetch("/api/dashboard/alerts?summary=true"),
         ]);
 
         if (overviewRes.ok && alertsRes.ok) {
           const overview = await overviewRes.json();
           const alerts = await alertsRes.json();
 
-          const unacknowledged = Array.isArray(alerts)
-            ? alerts.filter((alert: { acknowledged?: boolean }) => !alert.acknowledged).length
-            : 0;
-
           setStatus({
             totalDevices: overview.online + overview.offline,
             onlineDevices: overview.online,
             offlineDevices: overview.offline,
-            unacknowledgedAlerts: unacknowledged,
+            unacknowledgedAlerts: typeof alerts.active === "number" ? alerts.active : 0,
           });
         }
       } catch (error) {
