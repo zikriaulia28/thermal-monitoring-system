@@ -42,10 +42,7 @@ export async function getAlerts(
     params.set("status", filters.status);
   }
 
-  const response = await fetch(`/api/dashboard/alerts?${params.toString()}`, {
-    cache: "force-cache",
-    next: { revalidate: 30 },
-  });
+  const response = await fetch(`/api/dashboard/alerts?${params.toString()}`);
 
   if (!response.ok) {
     throw new Error("Failed to fetch alerts");
