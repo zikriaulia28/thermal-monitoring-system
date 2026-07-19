@@ -32,7 +32,7 @@ export default function EventLog({ alerts, isLoading = false }: EventLogProps) {
   const sev = (s: Severity) => SEV_CONFIG[s?.toUpperCase()] ?? SEV_CONFIG.INFO;
 
   return (
-    <div className="h-full rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
       <div className="px-5 pt-5 pb-3 border-b border-border">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2">
