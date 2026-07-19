@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import useSWR from "swr";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import {
@@ -18,10 +18,6 @@ import StatCard from "@/components/cards/StatCard";
 import DeviceMetrics from "@/components/charts/DeviceMetrics";
 import DashboardChart from "@/components/charts/DashboardChart";
 import EventLog from "@/components/tables/EventLog";
-import TimeRangeFilter from "@/components/filters/TimeRangeFilter";
-
-import { TimeRange } from "@/types/filter";
-import { Device } from "@/types/device";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -29,13 +25,8 @@ type HealthStatus = "normal" | "warning" | "critical";
 
 export default function DashboardPage() {
   usePageTitle("Dashboard");
-  const [timeRange, setTimeRange] = useState<TimeRange>("realtime");
-  const [customDateFrom, setCustomDateFrom] = useState<Date | null>(null);
-  const [customDateTo, setCustomDateTo] = useState<Date | null>(null);
 
-  const chartParams = new URLSearchParams({ range: timeRange });
-  if (customDateFrom) chartParams.set("from", customDateFrom.toISOString());
-  if (customDateTo) chartParams.set("to", customDateTo.toISOString());
+  const chartParams = new URLSearchParams({ range: "realtime" });
 
   const { data: overview, error, isLoading } = useSWR(
     "/api/dashboard/overview",
@@ -55,9 +46,7 @@ export default function DashboardPage() {
     { refreshInterval: 60000, revalidateOnFocus: false },
   );
 
-  const dailyParams = new URLSearchParams({ range: timeRange });
-  if (customDateFrom) dailyParams.set("from", customDateFrom.toISOString());
-  if (customDateTo) dailyParams.set("to", customDateTo.toISOString());
+  const dailyParams = new URLSearchParams({ range: "realtime" });
 
   const { data: dailyRes } = useSWR(
     () => `/api/dashboard/daily-stats?${dailyParams.toString()}`,
@@ -69,18 +58,6 @@ export default function DashboardPage() {
   const errorMessage = error ? "Gagal memuat data dashboard" : null;
   const activeAlerts = alertsRes?.active ?? 0;
   const criticalAlerts = alertsRes?.critical ?? 0;
-
-  const handleTimeRangeChange = (
-    newRange: TimeRange,
-    customFrom?: Date,
-    customTo?: Date,
-  ) => {
-    setTimeRange(newRange);
-    if (customFrom && customTo) {
-      setCustomDateFrom(customFrom);
-      setCustomDateTo(customTo);
-    }
-  };
 
   // ── Health Status ──────────────────────────────────
   const health: HealthStatus = useMemo(() => {
@@ -166,7 +143,6 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
-        <TimeRangeFilter value={timeRange} onChange={handleTimeRangeChange} />
       </div>
 
       {/* ── SYSTEM HEALTH BADGE ──────────────────────────── */}
