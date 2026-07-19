@@ -1,6 +1,7 @@
 "use client";
 
 import { AlertTriangle, Info, ShieldAlert } from "lucide-react";
+import Link from "next/link";
 import { formatWIB } from "@/lib/formatWIB";
 
 type Severity = "CRITICAL" | "WARNING" | "INFO" | string;
@@ -33,10 +34,18 @@ export default function EventLog({ alerts, isLoading = false }: EventLogProps) {
   return (
     <div className="h-full rounded-xl border border-border bg-card shadow-sm overflow-hidden">
       <div className="px-5 pt-5 pb-3 border-b border-border">
-        <h2 className="text-base font-bold text-foreground flex items-center gap-2">
-          <span className="w-1.5 h-4 bg-emerald-500 rounded-full" />
-          Event Log
-        </h2>
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-base font-bold text-foreground flex items-center gap-2">
+            <span className="w-1.5 h-4 bg-emerald-500 rounded-full" />
+            Event Log
+          </h2>
+          <Link
+            href="/dashboard/alerts"
+            className="text-xs font-medium text-[var(--primary)] hover:underline whitespace-nowrap"
+          >
+            Lihat Semua →
+          </Link>
+        </div>
         <p className="text-xs text-muted-foreground mt-1">
           {alerts.length} event{alerts.length === 1 ? "" : "s"}
         </p>
@@ -71,7 +80,7 @@ export default function EventLog({ alerts, isLoading = false }: EventLogProps) {
                         {a.location}
                       </span>
                       <span className="shrink-0 text-[11px] text-muted-foreground font-data whitespace-nowrap">
-                        {formatWIB(a.createdAt, "short")}
+                        {formatWIB(a.createdAt, "medium")}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5 break-words">
