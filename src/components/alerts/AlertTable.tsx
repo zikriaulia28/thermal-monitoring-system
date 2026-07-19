@@ -2,7 +2,7 @@
 
 import AlertRow from "./AlertRow";
 import { Alert } from "@/types/alert";
-import { formatWIB } from "@/lib/formatWIB";
+import { formatWIB, formatDurationSince } from "@/lib/formatWIB";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface PaginationProps {

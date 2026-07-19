@@ -18,6 +18,7 @@ import StatCard from "@/components/cards/StatCard";
 import DeviceMetrics from "@/components/charts/DeviceMetrics";
 import DashboardChart from "@/components/charts/DashboardChart";
 import EventLog from "@/components/tables/EventLog";
+import { Device } from "@/types/device";
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
