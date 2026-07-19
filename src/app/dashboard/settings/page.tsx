@@ -396,7 +396,7 @@ export default function SettingsPage() {
           />
           <SummaryItem
             label="Auto-refresh"
-            value={`Setiap ${formData.monitoringIntervalSeconds ?? "-"}d`}
+            value={`Setiap ${formData.monitoringIntervalSeconds ?? "-"} detik`}
             icon={<Clock className="w-4 h-4 text-amber-500" />}
           />
         </div>
