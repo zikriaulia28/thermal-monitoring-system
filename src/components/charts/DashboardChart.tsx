@@ -37,7 +37,7 @@ export default function DashboardChart({ devices, isLoading = false }: Props) {
   const { tempMin, tempMax, tempWarning, humMin, humMax } = useThresholds();
 
   const chartData = useMemo(() => {
-    if (!devices || devices.length === 0) return [];
+    if (!devices || !Array.isArray(devices) || devices.length === 0) return [];
     const pdb = getDeviceByLocation(devices, "PDB");
     const ups = getDeviceByLocation(devices, "UPS");
     const battery = getDeviceByLocation(devices, "BATTERY");

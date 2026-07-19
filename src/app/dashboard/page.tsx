@@ -270,7 +270,7 @@ export default function DashboardPage() {
       {/* MAIN CONTENT */}
       <div className="w-full grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
         <div className="w-full xl:col-span-2">
-          <DashboardChart devices={devices ?? []} isLoading={isLoading} />
+          <DashboardChart devices={Array.isArray(devices) ? devices : []} isLoading={isLoading} />
         </div>
         <div className="w-full xl:col-span-1">
           <EventLog alerts={alertsRes?.data ?? []} isLoading={isLoading} />
