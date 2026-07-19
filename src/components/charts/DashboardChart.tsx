@@ -64,7 +64,7 @@ export default function DashboardChart({ devices, isLoading = false }: Props) {
   );
 
   return (
-    <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+    <div className="h-full flex flex-col rounded-xl border border-border bg-card shadow-sm overflow-hidden">
       <div className="px-5 pt-5 pb-3 border-b border-border">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-base font-bold text-foreground flex items-center gap-2">
@@ -101,7 +101,7 @@ export default function DashboardChart({ devices, isLoading = false }: Props) {
         </p>
       </div>
 
-      <div className="h-[200px] w-full p-3">
+      <div className="flex-1 min-h-0 w-full p-3">
         {isLoading ? (
           <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
             Memuat tren…
