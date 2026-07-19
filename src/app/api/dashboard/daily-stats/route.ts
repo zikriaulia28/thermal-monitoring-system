@@ -1,20 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { NextResponse } from "next/server";
+import { getDateRangeFromFilter, TimeRange } from "@/types/filter";
 
 export const dynamic = "force-dynamic";
-
-/** Get a Date object representing "today at 00:00 WIB" converted to UTC.
- *  Uses toLocaleString — works correctly regardless of server timezone. */
-function getStartOfTodayWIB(): Date {
-  const now = new Date();
-  const jakartaDate = now.toLocaleDateString("en-CA", {
-    timeZone: "Asia/Jakarta",
-  }); // "2026-06-25"
-  const [y, m, d] = jakartaDate.split("-").map(Number);
-  // Midnight WIB = UTC 17:00 previous day
-  return new Date(Date.UTC(y, m - 1, d, 0, 0, 0) - 7 * 60 * 60 * 1000);
-}
 
 /** Get WIB hour (0-23) from any Date — timezone-safe. */
 function getWIBHour(date: Date): number {
@@ -28,14 +17,29 @@ function getWIBHour(date: Date): number {
   return h; // 0-23
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const startUTC = getStartOfTodayWIB();
+    const { searchParams } = new URL(request.url);
+    const rangeParam = (searchParams.get("range") || "realtime") as TimeRange;
+    const fromParam = searchParams.get("from");
+    const toParam = searchParams.get("to");
+
+    let filterFrom: Date;
+    let filterTo: Date;
+
+    if (rangeParam === "custom" && fromParam && toParam) {
+      filterFrom = new Date(fromParam);
+      filterTo = new Date(toParam);
+    } else {
+      const dateRange = getDateRangeFromFilter(rangeParam);
+      filterFrom = dateRange.from;
+      filterTo = dateRange.to;
+    }
 
     const devices = await prisma.device.findMany({
       include: {
         logs: {
-          where: { createdAt: { gte: startUTC } },
+          where: { createdAt: { gte: filterFrom, lte: filterTo } },
           orderBy: { createdAt: "asc" },
         },
       },

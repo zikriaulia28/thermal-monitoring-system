@@ -1,12 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useMemo } from "react";
+import useSWR from "swr";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import {
   Wifi,
   WifiOff,
   Thermometer,
   Droplet,
   LayoutDashboard,
+  AlertTriangle,
+  ShieldCheck,
+  AlertCircle,
 } from "lucide-react";
 
 import StatCard from "@/components/cards/StatCard";
@@ -15,83 +20,101 @@ import DeviceMetrics from "@/components/charts/DeviceMetrics";
 import EventTable from "@/components/tables/EventTable";
 import TimeRangeFilter from "@/components/filters/TimeRangeFilter";
 
-import { Device } from "@/types/device";
-import { DashboardOverview, DeviceDailyStat } from "@/types/dashboard";
 import { TimeRange } from "@/types/filter";
-import { getChartData, getOverview, getDailyStats } from "@/services/dashboard.service";
+
+const fetcher = (url: string) => fetch(url).then((r) => r.json());
+
+type HealthStatus = "normal" | "warning" | "critical";
 
 export default function DashboardPage() {
-  const [devices, setDevices] = useState<Device[]>([]);
-  const [overview, setOverview] = useState<DashboardOverview | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  usePageTitle("Dashboard");
   const [timeRange, setTimeRange] = useState<TimeRange>("realtime");
   const [customDateFrom, setCustomDateFrom] = useState<Date | null>(null);
   const [customDateTo, setCustomDateTo] = useState<Date | null>(null);
 
-  // ── Daily trend state ──
-  const [dailyStats, setDailyStats] = useState<DeviceDailyStat[]>([]);
-  const [dailyLoading, setDailyLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("daily-trend");
+  const chartParams = new URLSearchParams({ range: timeRange });
+  if (customDateFrom) chartParams.set("from", customDateFrom.toISOString());
+  if (customDateTo) chartParams.set("to", customDateTo.toISOString());
 
-  // Load daily stats on mount
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchDaily() {
-      setDailyLoading(true);
-      try {
-        const data = await getDailyStats();
-        if (!cancelled) setDailyStats(data.stats);
-      } catch {
-        // silent
-      } finally {
-        if (!cancelled) setDailyLoading(false);
-      }
-    }
-    fetchDaily();
-    return () => { cancelled = true; };
-  }, []);
+  const { data: overview, error, isLoading } = useSWR(
+    "/api/dashboard/overview",
+    fetcher,
+    { refreshInterval: 60000, revalidateOnFocus: false },
+  );
 
-  // Main data load
-  useEffect(() => {
-    let cancelled = false;
-    async function fetchData() {
-      try {
-        setError(null);
-        const [chartData, overviewData] = await Promise.all([
-          getChartData(timeRange, undefined, customDateFrom || undefined, customDateTo || undefined),
-          getOverview(),
-        ]);
-        if (!cancelled) {
-          setDevices(chartData);
-          setOverview(overviewData);
-        }
-      } catch (err) {
-        console.error("Dashboard load error:", err);
-        if (!cancelled) setError("Gagal memuat data dashboard");
-      } finally {
-        if (!cancelled) setIsLoading(false);
-      }
-    }
-    fetchData();
-    const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') fetchData();
-    }, 60000);
-    return () => { cancelled = true; clearInterval(interval); };
-  }, [timeRange, customDateFrom, customDateTo]);
+  const { data: devices } = useSWR(
+    () => `/api/dashboard/chart?${chartParams.toString()}`,
+    fetcher,
+    { refreshInterval: 60000, revalidateOnFocus: false },
+  );
 
-  const handleTimeRangeChange = (newRange: TimeRange, customFrom?: Date, customTo?: Date) => {
+  const { data: alertsRes } = useSWR(
+    "/api/dashboard/alerts",
+    fetcher,
+    { refreshInterval: 60000, revalidateOnFocus: false },
+  );
+
+  const dailyParams = new URLSearchParams({ range: timeRange });
+  if (customDateFrom) dailyParams.set("from", customDateFrom.toISOString());
+  if (customDateTo) dailyParams.set("to", customDateTo.toISOString());
+
+  const { data: dailyRes } = useSWR(
+    () => `/api/dashboard/daily-stats?${dailyParams.toString()}`,
+    fetcher,
+    { refreshInterval: 120000, revalidateOnFocus: false },
+  );
+
+  const dailyStats = dailyRes?.stats ?? [];
+  const errorMessage = error ? "Gagal memuat data dashboard" : null;
+  const activeAlerts = alertsRes?.active ?? 0;
+  const criticalAlerts = alertsRes?.critical ?? 0;
+
+  const handleTimeRangeChange = (
+    newRange: TimeRange,
+    customFrom?: Date,
+    customTo?: Date,
+  ) => {
     setTimeRange(newRange);
     if (customFrom && customTo) {
       setCustomDateFrom(customFrom);
       setCustomDateTo(customTo);
     }
-    setIsLoading(true);
   };
 
-  const handleTabChange = (tab: string) => {
-    setActiveTab(tab);
+  // ── Health Status ──────────────────────────────────
+  const health: HealthStatus = useMemo(() => {
+    if (criticalAlerts > 0) return "critical";
+    if ((overview?.offline ?? 0) > 0 || activeAlerts > 0) return "warning";
+    return "normal";
+  }, [criticalAlerts, activeAlerts, overview?.offline]);
+
+  const healthConfig: Record<HealthStatus, { label: string; icon: typeof ShieldCheck; color: string; bg: string }> = {
+    normal:    { label: "Normal",     icon: ShieldCheck,     color: "var(--cpems-online)",  bg: "var(--cpems-online)/10" },
+    warning:   { label: "Warning",    icon: AlertCircle,     color: "var(--cpems-warning)", bg: "var(--cpems-warning)/10" },
+    critical:  { label: "Critical",   icon: AlertTriangle,   color: "var(--cpems-offline)", bg: "var(--cpems-offline)/10" },
   };
+  const hc = healthConfig[health];
+  const HealthIcon = hc.icon;
+
+  // ── Extreme Devices ────────────────────────────────
+  const extremes = useMemo<{
+    hottest: { name: string; location: string; temp: number } | null;
+    coldest: { name: string; location: string; temp: number } | null;
+  } | null>(() => {
+    if (!devices || !Array.isArray(devices) || devices.length === 0) return null;
+    let hottest: { name: string; location: string; temp: number } | null = null;
+    let coldest: { name: string; location: string; temp: number } | null = null;
+
+    (devices as any[]).forEach((d: any) => {
+      const r = d.readings?.at(-1);
+      if (!r || r.temperature == null) return;
+      const entry = { name: d.name || d.id, location: d.location || "-", temp: r.temperature };
+      if (!hottest || entry.temp > hottest.temp) hottest = entry;
+      if (!coldest || entry.temp < coldest.temp) coldest = entry;
+    });
+
+    return { hottest, coldest };
+  }, [devices]);
 
   const statCards = [
     {
@@ -104,35 +127,40 @@ export default function DashboardPage() {
       title: "Device Offline",
       value: isLoading ? "..." : `${overview?.offline ?? 0}`,
       icon: WifiOff,
-      status: overview?.offline && overview.offline > 0 ? ("offline" as const) : undefined,
+      status:
+        overview?.offline && overview.offline > 0
+          ? ("offline" as const)
+          : undefined,
     },
     {
-      title: "Temperature Average",
-      value: isLoading ? "..." : `${overview?.avgTemperature.toFixed(1) ?? 0}°C`,
+      title: "Rata-rata Suhu",
+      value: isLoading
+        ? "..."
+        : `${overview?.avgTemperature?.toFixed(1) ?? 0}°C`,
       icon: Thermometer,
     },
     {
-      title: "Humidity Average",
-      value: isLoading ? "..." : `${overview?.avgHumidity.toFixed(1) ?? 0}%`,
+      title: "Rata-rata Kelembaban",
+      value: isLoading ? "..." : `${overview?.avgHumidity?.toFixed(1) ?? 0}%`,
       icon: Droplet,
     },
   ];
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      {/* ── HEADER ───────────────────────────────────────── */}
+      {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <div className="w-10 h-10 rounded-xl bg-[var(--primary)] flex items-center justify-center shadow-sm">
               <LayoutDashboard className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
                 Overview
               </h1>
-              <p className="text-slate-500 dark:text-slate-400 text-xs sm:text-sm">
-                Realtime IoT Monitoring Dashboard
+              <p className="text-muted-foreground text-xs sm:text-sm">
+                Dashboard Monitoring Real-time
               </p>
             </div>
           </div>
@@ -140,22 +168,92 @@ export default function DashboardPage() {
         <TimeRangeFilter value={timeRange} onChange={handleTimeRangeChange} />
       </div>
 
-      {/* ── ERROR STATE ──────────────────────────────────── */}
-      {error && (
-        <div className="relative overflow-hidden rounded-xl border border-red-200 dark:border-red-800 bg-gradient-to-r from-red-50 to-red-50/50 dark:from-red-950/20 dark:to-red-950/10 p-4 sm:p-5">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 to-rose-500" />
+      {/* ── SYSTEM HEALTH BADGE ──────────────────────────── */}
+      <div
+        className="rounded-xl border shadow-sm p-4 flex items-center justify-between"
+        style={{
+          borderColor: `color-mix(in oklch, ${hc.color} 40%, transparent)`,
+          backgroundColor: `color-mix(in oklch, ${hc.color} 8%, transparent)`,
+        }}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className="inline-flex items-center justify-center w-10 h-10 rounded-xl text-white"
+            style={{ backgroundColor: hc.color }}
+          >
+            <HealthIcon className="w-5 h-5" />
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Status Sistem</p>
+            <h2
+              className="font-data text-lg font-bold"
+              style={{ color: hc.color }}
+            >
+              {hc.label}
+            </h2>
+          </div>
+        </div>
+        <div className="text-right">
+          <p className="text-xs text-muted-foreground">Alert Aktif</p>
+          <span className="font-data text-lg font-bold text-foreground">
+            {(overview?.offline ?? 0) > 0
+              ? `${criticalAlerts} critical`
+              : criticalAlerts > 0
+                ? `${criticalAlerts} critical`
+                : activeAlerts > 0
+                  ? `${activeAlerts} active`
+                  : "Tidak ada"}
+          </span>
+        </div>
+      </div>
+
+      {/* ── EXTREME DEVICES ─────────────────────────────── */}
+      {extremes && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="rounded-xl border border-[var(--cpems-offline)]/20 bg-[var(--cpems-offline)]/5 p-3 flex items-center gap-3">
+            <span className="text-lg shrink-0">🔥</span>
+            <div className="min-w-0">
+              <p className="text-[10px] text-muted-foreground font-medium uppercase">Tertinggi</p>
+              <p className="text-sm font-bold text-foreground truncate font-data">
+                {extremes.hottest?.name} — {extremes.hottest?.temp.toFixed(1)}°C
+              </p>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {extremes.hottest?.location}
+              </p>
+            </div>
+          </div>
+          <div className="rounded-xl border border-[var(--cpems-humidity)]/20 bg-[var(--cpems-humidity)]/5 p-3 flex items-center gap-3">
+            <span className="text-lg shrink-0">❄️</span>
+            <div className="min-w-0">
+              <p className="text-[10px] text-muted-foreground font-medium uppercase">Terendah</p>
+              <p className="text-sm font-bold text-foreground truncate font-data">
+                {extremes.coldest?.name} — {extremes.coldest?.temp.toFixed(1)}°C
+              </p>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {extremes.coldest?.location}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ERROR STATE */}
+      {errorMessage && (
+        <div className="relative rounded-xl border border-[var(--cpems-offline)]/30 bg-[var(--cpems-offline)]/5 p-4 sm:p-5">
           <div className="flex items-start gap-3">
-            <div className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-red-100 dark:bg-red-900/30">
+            <div className="shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--cpems-offline)]/10">
               <span className="text-lg">⚠️</span>
             </div>
             <div>
-              <h3 className="text-sm font-semibold text-red-800 dark:text-red-400">
+              <h3 className="text-sm font-semibold text-[var(--cpems-offline)]">
                 Gagal Memuat Data
               </h3>
-              <p className="text-sm text-red-600 dark:text-red-500 mt-1">{error}</p>
+              <p className="text-sm text-[var(--cpems-offline)]/80 mt-1">
+                {errorMessage}
+              </p>
               <button
                 onClick={() => window.location.reload()}
-                className="mt-2 text-xs font-semibold text-red-700 dark:text-red-400 hover:underline"
+                className="mt-2 text-xs font-semibold text-[var(--primary)] hover:underline"
               >
                 Coba refresh halaman
               </button>
@@ -164,7 +262,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* ── STATS CARDS ─────────────────────────────────── */}
+      {/* STATS CARDS */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {statCards.map((item) => (
           <StatCard
@@ -178,35 +276,33 @@ export default function DashboardPage() {
         ))}
       </div>
 
-      {/* ── RINGKASAN HARIAN ────────────────────────────── */}
-      {activeTab === "daily-trend" && dailyStats.length > 0 && (
-        <div className="relative overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-slate-800 dark:border-slate-700">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-emerald-500 to-teal-500" />
+      {/* RINGKASAN HARIAN */}
+      {dailyStats.length > 0 && (
+        <div className="rounded-xl border bg-card shadow-sm">
           <div className="p-3 sm:p-4 md:p-5">
-            <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-              <span className="w-1.5 h-4 bg-emerald-500 rounded-full" />
+            <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
+              <span className="w-1.5 h-4 bg-[var(--cpems-online)] rounded-full" />
               Ringkasan Harian
             </h3>
-            <DeviceMetrics stats={dailyStats} isLoading={dailyLoading} />
+            <DeviceMetrics stats={dailyStats} isLoading={!dailyRes} />
           </div>
         </div>
       )}
 
-      {/* ── MAIN CONTENT ────────────────────────────────── */}
+      {/* MAIN CONTENT */}
       <div className="w-full grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
-        {/* Chart */}
         <div className="w-full xl:col-span-2">
           <RealtimeChart
-            devices={devices}
+            devices={devices ?? []}
             isLoading={isLoading}
             timeRange={timeRange}
-            onTabChange={handleTabChange}
+            onTabChange={() => {}}
+            customDateFrom={customDateFrom}
+            customDateTo={customDateTo}
           />
         </div>
-
-        {/* Event Table */}
         <div className="w-full xl:col-span-1">
-          <EventTable devices={devices} isLoading={isLoading} />
+          <EventTable devices={devices ?? []} isLoading={isLoading} />
         </div>
       </div>
     </div>

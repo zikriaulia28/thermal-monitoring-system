@@ -13,6 +13,7 @@ import {
   Activity,
 } from "lucide-react";
 import MonitoringTimeRangeSelector from "./MonitoringTimeRangeSelector";
+import { Button } from "@/components/ui/button";
 
 interface Props {
   devices: Device[];
@@ -21,6 +22,14 @@ interface Props {
   onTimeRangeChange: (range: MonitoringTimeRange) => void;
   onRefresh: () => void;
 }
+
+const COLOR_MAP: Record<string, string> = {
+  Device: "var(--primary)",
+  Online: "var(--cpems-online)",
+  Suhu: "var(--cpems-temp)",
+  Kelembaban: "var(--cpems-humidity)",
+  Risk: "var(--cpems-offline)",
+};
 
 export default function MonitoringHeader({
   devices,
@@ -75,35 +84,35 @@ export default function MonitoringHeader({
       label: "Total Device",
       value: devices.length,
       icon: Server,
-      accent: "from-blue-500 to-indigo-500",
+      key: "Device",
       detail: `${totalDataPoints} titik data`,
     },
     {
       label: "Online",
       value: online,
       icon: Wifi,
-      accent: "from-green-500 to-emerald-500",
+      key: "Online",
       detail: `${offline > 0 ? `${offline} offline` : "Semua terhubung"}`,
     },
     {
       label: "Rata-rata Suhu",
       value: `${avgTemp.toFixed(1)}°C`,
       icon: trendUp ? TrendingUp : TrendingDown,
-      accent: "from-orange-500 to-amber-500",
+      key: "Suhu",
       detail: trendUp ? "Naik" : "Turun / Stabil",
     },
     {
       label: "Rata-rata Kelembaban",
       value: `${avgHum.toFixed(1)}%`,
       icon: Droplets,
-      accent: "from-blue-500 to-cyan-500",
+      key: "Kelembaban",
       detail: "Rata-rata lingkungan",
     },
     {
       label: "Device Berisiko",
       value: deviceAtRisk > 0 ? deviceAtRisk : "Aman",
       icon: deviceAtRisk > 0 ? AlertTriangle : Activity,
-      accent: deviceAtRisk > 0 ? "from-red-500 to-rose-500" : "from-emerald-500 to-teal-500",
+      key: "Risk",
       detail: deviceAtRisk > 0 ? "Threshold violation" : "Semua dalam batas normal",
     },
   ];
@@ -114,15 +123,15 @@ export default function MonitoringHeader({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-6">
         <div>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20">
+            <div className="w-10 h-10 rounded-xl bg-[var(--primary)] flex items-center justify-center shadow-sm">
               <Activity className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
-                Realtime Monitoring
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
+                Monitoring Real-time
               </h1>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-                Live Sensor Telemetry & Status
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+                Telemetri & Status Sensor Langsung
               </p>
             </div>
           </div>
@@ -130,14 +139,15 @@ export default function MonitoringHeader({
 
         <div className="flex items-center gap-2">
           <MonitoringTimeRangeSelector value={timeRange} onChange={onTimeRangeChange} />
-          <button
+          <Button
+            variant="outline"
+            size="icon"
             onClick={onRefresh}
             disabled={isLoading}
-            className="p-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors disabled:opacity-50"
-            title="Refresh Data"
+            title="Muat Ulang Data"
           >
-            <RefreshCw className={`w-4 h-4 text-slate-600 dark:text-slate-400 ${isLoading ? "animate-spin" : ""}`} />
-          </button>
+            <RefreshCw className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`} />
+          </Button>
         </div>
       </div>
 
@@ -145,25 +155,35 @@ export default function MonitoringHeader({
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
+          const accent = COLOR_MAP[stat.key];
+          const isRisk = stat.key === "Risk" && deviceAtRisk > 0;
           return (
             <div
               key={stat.label}
-              className="relative overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-slate-800 dark:border-slate-700 transition-all hover:shadow-md"
+              className={`relative overflow-hidden rounded-xl border shadow-sm transition-all hover:shadow-md ${
+                isRisk ? "border-[var(--cpems-offline)]/30 bg-[var(--cpems-offline)]/5" : "border-border bg-card"
+              }`}
             >
-              <div className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${stat.accent}`} />
-              <div className="p-3 sm:p-4 pt-4">
+              <div
+                className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full"
+                style={{ backgroundColor: accent }}
+              />
+              <div className="p-3 sm:p-4 pl-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 sm:p-2.5 rounded-lg bg-slate-100 dark:bg-slate-700">
-                    <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-slate-600 dark:text-slate-300" />
+                  <div
+                    className="inline-flex items-center justify-center w-9 h-9 rounded-lg text-white shadow-sm"
+                    style={{ backgroundColor: accent }}
+                  >
+                    <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
+                    <p className="text-xs text-muted-foreground font-medium truncate">
                       {stat.label}
                     </p>
-                    <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white mt-0.5 truncate">
+                    <h2 className="font-data text-lg sm:text-xl font-bold text-foreground mt-0.5 truncate">
                       {stat.value}
                     </h2>
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">
+                    <p className="text-[10px] text-muted-foreground/60 mt-0.5 truncate">
                       {stat.detail}
                     </p>
                   </div>

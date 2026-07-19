@@ -6,6 +6,16 @@ import { Prisma } from "@prisma/client";
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+
+    // ── Lightweight summary mode (for dashboard) ──
+    if (searchParams.get("summary") === "true") {
+      const [active, critical] = await Promise.all([
+        prisma.alert.count({ where: { acknowledged: false } }),
+        prisma.alert.count({ where: { acknowledged: false, severity: "CRITICAL" } }),
+      ]);
+      return NextResponse.json({ active, critical });
+    }
+
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "10")));
     const skip = (page - 1) * limit;

@@ -32,6 +32,9 @@ model SensorLog {
 
   deviceId    String
   device      Device   @relation(fields: [deviceId], references: [deviceId])
+
+  @@index([createdAt])
+  @@index([deviceId, createdAt])
 }
 
 model Alert {
@@ -46,6 +49,11 @@ model Alert {
 
   createdAt   DateTime @default(now())
   acknowledged Boolean @default(false)
+
+  @@index([createdAt])
+  @@index([severity])
+  @@index([acknowledged])
+  @@index([deviceId, createdAt])
 }
 
 model CleanupLog {

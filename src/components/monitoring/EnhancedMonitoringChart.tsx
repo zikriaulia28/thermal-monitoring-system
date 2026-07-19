@@ -86,33 +86,33 @@ export default function EnhancedMonitoringChart({
   }, [chartData, keys, isTemperature]);
 
   return (
-    <div className="rounded-xl border bg-white dark:bg-slate-800 dark:border-slate-700 p-4 sm:p-5 shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-border bg-card p-4 sm:p-5 shadow-sm overflow-hidden">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
         <div>
           <div className="flex items-center gap-2">
-            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+            <h2 className="text-base sm:text-lg font-bold text-foreground">
               {title}
             </h2>
             {chartData.length > 0 && (
-              <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 font-medium">
+              <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
                 {chartData.length} titik
               </span>
             )}
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             Real-time monitoring · rentang {yDomain[0]}–{yDomain[1]} {unit}
           </p>
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-900 rounded-lg w-fit">
+        <div className="flex items-center gap-1 p-1 bg-muted rounded-lg w-fit">
           <button
             onClick={() => setActiveTab("temperature")}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
               isTemperature
-                ? "bg-white dark:bg-slate-800 text-red-600 dark:text-red-400 shadow-sm"
-                : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                ? "bg-card text-[var(--cpems-offline)] shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Thermometer className="w-4 h-4" />
@@ -122,8 +122,8 @@ export default function EnhancedMonitoringChart({
             onClick={() => setActiveTab("humidity")}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
               !isTemperature
-                ? "bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm"
-                : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
+                ? "bg-card text-emerald-600 shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             <Droplets className="w-4 h-4" />
@@ -133,7 +133,7 @@ export default function EnhancedMonitoringChart({
       </div>
 
       {/* Chart Area */}
-      <div className="h-[280px] sm:h-[340px] md:h-[400px] w-full rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-2">
+      <div className="h-[280px] sm:h-[340px] md:h-[400px] w-full rounded-lg border border-border bg-card p-2">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center h-full">
             <div className="relative">

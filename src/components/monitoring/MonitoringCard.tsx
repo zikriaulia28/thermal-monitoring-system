@@ -133,7 +133,7 @@ export default function MonitoringCard({ device }: Props) {
               {tempTrend === "up" && <span className="ml-1.5 inline-block text-[10px]">↑</span>}
               {tempTrend === "down" && <span className="ml-1.5 inline-block text-[10px]">↓</span>}
             </p>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-1">
+            <h2 className="font-data text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-1">
               {latest?.temperature ?? "--"}
               <span className="text-base sm:text-lg font-medium text-slate-500 dark:text-slate-400">°C</span>
             </h2>
@@ -159,7 +159,7 @@ export default function MonitoringCard({ device }: Props) {
             >
               Humidity
             </p>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-1">
+            <h2 className="font-data text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-1">
               {latest?.humidity ?? "--"}
               <span className="text-base sm:text-lg font-medium text-slate-500 dark:text-slate-400">%</span>
             </h2>
@@ -190,7 +190,7 @@ export default function MonitoringCard({ device }: Props) {
           <p className="text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider font-medium">
             Terakhir Terlihat
           </p>
-          <p className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mt-0.5">
+          <p className="font-data text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300 mt-0.5">
             {formatWIB(device.lastSeen, "medium")}
           </p>
         </div>

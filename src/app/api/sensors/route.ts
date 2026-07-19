@@ -1,12 +1,11 @@
-import { prisma } from "@/lib/prisma";
+import { prisma, getCachedSettings } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
-import { getOfflineThresholdMs } from "@/lib/deviceStatus";
 
 export const dynamic = "force-dynamic";
 
 async function getThresholds() {
-  const settings = await prisma.settings.findFirst();
+  const settings = await getCachedSettings();
   return {
     tempMax: settings?.thresholdTempMax ?? 35,
     tempWarning: settings ? settings.thresholdTempMax - 5 : 28,
@@ -100,52 +99,6 @@ export async function POST(req: Request) {
       if (!existing) {
         await prisma.alert.create({
           data: { deviceId, location, type: "HUMIDITY", severity: "WARNING", message: `Humidity ${humValue}% below threshold (<${thresholds.humMin}%)` },
-        });
-      }
-    }
-
-    // ───────────────────────────────────────────────────────────
-    // Layer 2 (Hybrid): Check other devices for offline status
-    // When sensor A posts data, check all other sensors.
-    // If any sensor is past threshold → create OFFLINE alert
-    // (skip if that sensor just posted, and skip duplicate alerts)
-    // ───────────────────────────────────────────────────────────
-    const settings = await prisma.settings.findFirst();
-    const intervalSeconds = settings?.monitoringIntervalSeconds;
-    const thresholdMs = getOfflineThresholdMs(intervalSeconds);
-
-    const otherDevices = await prisma.device.findMany({
-      where: { deviceId: { not: deviceId } },
-      select: { deviceId: true, location: true, lastSeen: true },
-    });
-
-    for (const dev of otherDevices) {
-      if (!dev.lastSeen) continue;
-
-      const stale = Date.now() - dev.lastSeen.getTime();
-      if (stale < thresholdMs) continue;
-
-      // Dedupe: skip if an ALERT_OFFLINE already exists in the last hour
-      // (prevents flooding alerts every POST)
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-      const existing = await prisma.alert.findFirst({
-        where: {
-          deviceId: dev.deviceId,
-          type: "ALERT_OFFLINE",
-          createdAt: { gte: oneHourAgo },
-        },
-      });
-
-      if (!existing) {
-        const offlineMinutes = Math.floor(stale / 60000);
-        await prisma.alert.create({
-          data: {
-            deviceId: dev.deviceId,
-            location: dev.location,
-            type: "ALERT_OFFLINE",
-            severity: offlineMinutes >= 15 ? "CRITICAL" : "WARNING",
-            message: `${dev.location} tidak mengirim data selama ${offlineMinutes} menit`,
-          },
         });
       }
     }

@@ -19,7 +19,7 @@ export default function DeviceMetrics({ stats, isLoading = false }: Props) {
       {stats.map((stat) => (
         <div
           key={stat.deviceId}
-          className="rounded-xl border bg-white dark:bg-slate-800 dark:border-slate-700 p-4 shadow-sm hover:shadow-md transition-shadow"
+          className="rounded-xl border bg-card border-border p-4 shadow-sm hover:shadow-md transition-shadow"
         >
           {/* Device Name */}
           <div className="flex items-center gap-2 mb-3">

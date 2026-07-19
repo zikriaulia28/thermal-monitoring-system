@@ -11,7 +11,7 @@ interface Props {
 export default function MonitoringGrid({ devices }: Props) {
   if (devices.length === 0) {
     return (
-      <div className="rounded-xl border bg-white dark:bg-slate-800 dark:border-slate-700 p-10 text-center">
+      <div className="rounded-xl border bg-card border-border p-10 text-center">
         <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-700 inline-block mb-3">
           <Radio className="w-10 h-10 text-slate-400 dark:text-slate-500" />
         </div>

@@ -21,7 +21,7 @@ interface Props {
 
 export default function MonitoringChart({ data, isLoading }: Props) {
   return (
-    <div className="rounded-xl border bg-white dark:bg-slate-800 dark:border-slate-700 p-3 sm:p-5 shadow-sm">
+    <div className="rounded-xl border bg-card border-border p-3 sm:p-5 shadow-sm">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-base sm:text-lg font-semibold text-slate-900 dark:text-white">
           Temperature Monitoring

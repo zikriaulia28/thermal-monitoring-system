@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useReportData } from "@/hooks/useReportData";
 import { ReportType } from "@/types/reports";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import {
   FileText,
   Download,
@@ -28,6 +29,7 @@ function getDefaultDateRange(): { startDate: string; endDate: string } {
 }
 
 function ReportsContent() {
+  usePageTitle("Reports");
   const { startDate: defaultStart, endDate: defaultEnd } = getDefaultDateRange();
 
   const [reportType, setReportType] = useState<ReportType>("summary");
@@ -275,32 +277,29 @@ function ReportsContent() {
 
       {/* Summary Stats */}
       {summary && (
-        <div className="relative overflow-hidden rounded-xl border bg-white dark:bg-slate-800 dark:border-slate-700 shadow-sm">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-cyan-500" />
-          <div className="p-4 sm:p-5">
-            <div className="flex flex-wrap items-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Periode:</span>
-                <span className="font-semibold text-slate-800 dark:text-white">{summary.period}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Record:</span>
-                <span className="font-semibold text-slate-800 dark:text-white">{summary.totalRecords}</span>
-              </div>
-              {reportType === "alerts" && summary.critical !== undefined && (
-                <>
-                  <span className="flex items-center gap-1.5 text-xs font-medium text-red-600">
-                    <span className="w-2 h-2 rounded-full bg-red-500" /> Critical: {summary.critical}
-                  </span>
-                  <span className="flex items-center gap-1.5 text-xs font-medium text-amber-600">
-                    <span className="w-2 h-2 rounded-full bg-amber-500" /> Warning: {summary.warning}
-                  </span>
-                  <span className="flex items-center gap-1.5 text-xs font-medium text-blue-600">
-                    <span className="w-2 h-2 rounded-full bg-blue-500" /> Pending: {summary.pending}
-                  </span>
-                </>
-              )}
+        <div className="rounded-xl border bg-card shadow-sm p-4 sm:p-5">
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground">Periode:</span>
+              <span className="font-semibold text-foreground">{summary.period}</span>
             </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground">Total Record:</span>
+              <span className="font-semibold text-foreground">{summary.totalRecords}</span>
+            </div>
+            {reportType === "alerts" && summary.critical !== undefined && (
+              <>
+                <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--cpems-offline)]">
+                  <span className="w-2 h-2 rounded-full bg-[var(--cpems-offline)]" /> Critical: {summary.critical}
+                </span>
+                <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--cpems-warning)]">
+                  <span className="w-2 h-2 rounded-full bg-[var(--cpems-warning)]" /> Warning: {summary.warning}
+                </span>
+                <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--primary)]">
+                  <span className="w-2 h-2 rounded-full bg-[var(--primary)]" /> Pending: {summary.pending}
+                </span>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -335,27 +334,27 @@ function ReportsContent() {
       </div>
 
       {/* Data Table */}
-      <div className="relative overflow-hidden rounded-xl border bg-white dark:bg-slate-800 dark:border-slate-700 shadow-sm">
+      <div className="rounded-xl border bg-card shadow-sm">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center p-10 sm:p-14">
             <div className="relative">
-              <div className="w-12 h-12 rounded-full border-4 border-slate-200 dark:border-slate-700" />
-              <div className="w-12 h-12 rounded-full border-4 border-blue-500 border-t-transparent animate-spin absolute inset-0" />
+              <div className="w-12 h-12 rounded-full border-4 border-muted" />
+              <div className="w-12 h-12 rounded-full border-4 border-[var(--primary)] border-t-transparent animate-spin absolute inset-0" />
             </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-3">Memuat data laporan...</p>
+            <p className="text-sm text-muted-foreground mt-3">Memuat data laporan...</p>
           </div>
         ) : displayData.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-10 sm:p-14">
-            <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-700 mb-3">
-              <Search className="w-10 h-10 text-slate-400 dark:text-slate-500" />
+            <div className="p-3 rounded-xl bg-muted mb-3">
+              <Search className="w-10 h-10 text-muted-foreground/40" />
             </div>
-            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Tidak Ada Data</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Coba ubah filter atau rentang tanggal</p>
+            <p className="text-sm font-semibold text-foreground">Tidak Ada Data</p>
+            <p className="text-xs text-muted-foreground mt-1">Coba ubah filter atau rentang tanggal</p>
           </div>
         ) : (
           <>
             {/* Mobile Card Layout */}
-            <div className="md:hidden divide-y divide-slate-200 dark:divide-slate-700">
+            <div className="md:hidden divide-y divide-border">
               {displayData.map((row: Record<string, unknown>, idx: number) => (
                 <div key={idx} className="p-3 space-y-2">
                   <div className="flex items-center justify-between">
@@ -363,15 +362,15 @@ function ReportsContent() {
                       <span
                         className={`px-2 py-1 rounded text-xs font-medium ${
                           row.severity === "CRITICAL"
-                            ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                            ? "bg-[var(--cpems-offline)]/10 text-[var(--cpems-offline)]"
+                            : "bg-[var(--cpems-warning)]/10 text-[var(--cpems-warning)]"
                         }`}
                       >
                         {String(row.severity)}
                       </span>
                     )}
                     {reportType === "summary" && (
-                      <span className="text-xs font-medium text-slate-900 dark:text-white">{String(row.date)}</span>
+                      <span className="text-xs font-medium text-foreground">{String(row.date)}</span>
                     )}
                     {reportType === "detailed" && (
                       <span className="text-xs text-slate-500 dark:text-slate-400">{String(row.time)}</span>

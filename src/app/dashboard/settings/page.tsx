@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import { useSettings, useUpdateSettings } from "@/hooks/useSettings";
 import { Settings as SettingsType, DEFAULT_SETTINGS } from "@/types/settings";
 import {
@@ -34,13 +35,13 @@ function SummaryItem({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-2 p-2 bg-white dark:bg-slate-800 rounded-lg border border-blue-100 dark:border-blue-900">
+    <div className="flex items-center gap-2 p-2 bg-card rounded-lg border border-border">
       {icon}
       <div className="min-w-0">
-        <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate">
+        <p className="text-[10px] font-medium text-muted-foreground truncate">
           {label}
         </p>
-        <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
+        <p className="text-xs font-bold text-foreground truncate">
           {value}
         </p>
       </div>
@@ -49,6 +50,7 @@ function SummaryItem({
 }
 
 export default function SettingsPage() {
+  usePageTitle("Settings");
   const { settings, isLoading } = useSettings();
   const { updateSettings } = useUpdateSettings();
 
@@ -219,11 +221,11 @@ export default function SettingsPage() {
     return (
       <div className="space-y-6">
         <div className="mb-6">
-          <div className="h-8 w-40 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mb-2" />
-          <div className="h-4 w-60 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
+          <div className="h-8 w-40 bg-muted rounded animate-pulse mb-2" />
+          <div className="h-4 w-60 bg-muted rounded animate-pulse" />
         </div>
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="w-6 h-6 animate-spin text-slate-400" />
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
       </div>
     );
@@ -232,23 +234,23 @@ export default function SettingsPage() {
   // ── Auth Gate ───────────────────────────────────────────
   if (!isAuthorized) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl p-8 w-full max-w-md mx-4 border border-slate-200 dark:border-slate-700">
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
+        <div className="bg-card rounded-2xl shadow-sm p-8 w-full max-w-md mx-4 border border-border">
           <div className="text-center mb-6">
-            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg shadow-amber-500/20">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-[var(--cpems-warning)] flex items-center justify-center shadow-sm">
               <Shield className="w-8 h-8 text-white" />
             </div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+            <h2 className="text-xl font-bold text-foreground">
               Admin Access
             </h2>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+            <p className="text-sm text-muted-foreground mt-2">
               Masukkan password untuk membuka Settings
             </p>
           </div>
           <div className="space-y-4">
             <div>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
                   type="password"
                   value={keyInput}
@@ -262,7 +264,7 @@ export default function SettingsPage() {
                   }}
                   placeholder="Masukkan password admin..."
                   disabled={!!rateLimitInfo}
-                  className="w-full pl-10 pr-4 py-3 text-sm border border-slate-300 dark:border-slate-600 rounded-xl dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full pl-10 pr-4 py-3 text-sm border border-input rounded-xl bg-card text-foreground focus:ring-2 focus:ring-[var(--cpems-warning)] focus:border-transparent outline-none transition disabled:opacity-50 disabled:cursor-not-allowed"
                   autoFocus={!rateLimitInfo}
                 />
               </div>
@@ -272,13 +274,13 @@ export default function SettingsPage() {
                 </p>
               )}
               {rateLimitInfo && (
-                <div className="mt-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-                  <p className="text-xs text-red-700 dark:text-red-400 flex items-center gap-1">
+                <div className="mt-2 p-3 bg-destructive/10 border border-destructive/30 rounded-lg">
+                  <p className="text-xs text-destructive flex items-center gap-1">
                     <Shield className="w-3 h-3" />
                     {rateLimitInfo}
                   </p>
                   {cooldownRemaining > 0 && (
-                    <p className="text-xs text-red-500 dark:text-red-300 mt-1 ml-4">
+                    <p className="text-xs text-destructive mt-1 ml-4">
                       Tunggu {Math.floor(cooldownRemaining / 60)}:
                       {String(cooldownRemaining % 60).padStart(2, "0")}
                     </p>
@@ -289,19 +291,19 @@ export default function SettingsPage() {
             <button
               onClick={handleKeySubmit}
               disabled={!keyInput || !!rateLimitInfo}
-              className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition active:scale-95 shadow-lg"
+              className="w-full py-3 bg-[var(--cpems-warning)] hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition active:scale-95 shadow-sm"
             >
               Buka Settings
             </button>
             <Link
               href="/dashboard"
-              className="w-full py-3 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-medium rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition active:scale-95 text-center flex items-center justify-center gap-2"
+              className="w-full py-3 border border-border text-foreground/80 font-medium rounded-xl hover:bg-muted transition active:scale-95 text-center flex items-center justify-center gap-2"
             >
               <ArrowLeft className="w-4 h-4" />
               Kembali ke Dashboard
             </Link>
           </div>
-          <p className="text-xs text-slate-400 dark:text-slate-500 text-center mt-4">
+          <p className="text-xs text-muted-foreground text-center mt-4">
             Hubungi engineer untuk mendapatkan password admin
           </p>
         </div>
@@ -317,10 +319,10 @@ export default function SettingsPage() {
           <div className="h-8 w-40 bg-slate-200 rounded animate-pulse mb-2" />
           <div className="h-4 w-60 bg-slate-200 rounded animate-pulse" />
         </div>
-        <div className="h-24 bg-slate-200 rounded-xl animate-pulse" />
+        <div className="h-24 bg-muted rounded-xl animate-pulse" />
         <div className="grid gap-6 lg:grid-cols-2">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-64 bg-slate-200 rounded-xl animate-pulse" />
+            <div key={i} className="h-64 bg-muted rounded-xl animate-pulse" />
           ))}
         </div>
       </div>
@@ -341,17 +343,17 @@ export default function SettingsPage() {
 
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
             Settings
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Configure system thresholds and monitoring preferences
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
+            Konfigurasi threshold dan preferensi monitoring
           </p>
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={handleReset}
-            className="flex items-center gap-2 px-4 py-2 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-300 font-medium rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition active:scale-95"
+            className="flex items-center gap-2 px-4 py-2 border border-border text-foreground/80 font-medium rounded-lg hover:bg-muted transition active:scale-95"
           >
             <RotateCcw className="w-4 h-4" />
             <span className="hidden sm:inline">Reset Default</span>
@@ -359,7 +361,7 @@ export default function SettingsPage() {
           <button
             onClick={handleSave}
             disabled={isSaving}
-            className="flex items-center gap-2 px-6 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition active:scale-95 shadow-sm"
+            className="flex items-center gap-2 px-6 py-2 bg-[var(--primary)] hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium rounded-lg transition active:scale-95 shadow-sm"
           >
             {isSaving ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -372,8 +374,8 @@ export default function SettingsPage() {
       </div>
 
       {/* Threshold Summary */}
-      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4 sm:p-5">
-        <h2 className="text-sm font-semibold text-blue-800 dark:text-blue-400 mb-3">
+      <div className="bg-muted border border-border rounded-xl p-4 sm:p-5">
+        <h2 className="text-sm font-semibold text-foreground mb-3">
           Ringkasan Threshold
         </h2>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -403,13 +405,13 @@ export default function SettingsPage() {
       {/* Form Grid */}
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Temperature & Humidity */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
-          <h2 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+        <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
+          <h2 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
             <Thermometer className="w-5 h-5 text-red-500" /> Threshold Suhu & Kelembaban
           </h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-semibold text-foreground mb-2">
                 Rentang Suhu (°C)
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -420,13 +422,13 @@ export default function SettingsPage() {
                     name="thresholdTempMin"
                     value={formData.thresholdTempMin ?? ""}
                     onChange={handleChange}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition ${
+                    className={`w-full px-3 py-2 text-sm border rounded-lg bg-card text-foreground focus:ring-2 focus:ring-[var(--primary)] outline-none transition ${
                       errors.thresholdTempMin
-                        ? "border-red-300 bg-red-50"
-                        : "border-slate-300 dark:border-slate-600"
+                        ? "border-destructive bg-destructive/10"
+                        : "border-input"
                     }`}
                   />
-                  <p className="text-[10px] sm:text-xs text-slate-500 mt-1">Min (°C)</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Min (°C)</p>
                   {errors.thresholdTempMin && (
                     <p className="text-xs text-red-600 mt-0.5">{errors.thresholdTempMin}</p>
                   )}
@@ -438,13 +440,13 @@ export default function SettingsPage() {
                     name="thresholdTempMax"
                     value={formData.thresholdTempMax ?? ""}
                     onChange={handleChange}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition ${
+                    className={`w-full px-3 py-2 text-sm border rounded-lg bg-card text-foreground focus:ring-2 focus:ring-[var(--primary)] outline-none transition ${
                       errors.thresholdTempMax
-                        ? "border-red-300 bg-red-50"
-                        : "border-slate-300 dark:border-slate-600"
+                        ? "border-destructive bg-destructive/10"
+                        : "border-input"
                     }`}
                   />
-                  <p className="text-[10px] sm:text-xs text-slate-500 mt-1">Max (°C)</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Max (°C)</p>
                   {errors.thresholdTempMax && (
                     <p className="text-xs text-red-600 mt-0.5">{errors.thresholdTempMax}</p>
                   )}
@@ -452,7 +454,7 @@ export default function SettingsPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-semibold text-foreground mb-2">
                 Rentang Kelembaban (%)
               </label>
               <div className="grid grid-cols-2 gap-3">
@@ -463,13 +465,13 @@ export default function SettingsPage() {
                     name="thresholdHumidityMin"
                     value={formData.thresholdHumidityMin ?? ""}
                     onChange={handleChange}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition ${
+                    className={`w-full px-3 py-2 text-sm border rounded-lg bg-card text-foreground focus:ring-2 focus:ring-[var(--primary)] outline-none transition ${
                       errors.thresholdHumidityMin
-                        ? "border-red-300 bg-red-50"
-                        : "border-slate-300 dark:border-slate-600"
+                        ? "border-destructive bg-destructive/10"
+                        : "border-input"
                     }`}
                   />
-                  <p className="text-[10px] sm:text-xs text-slate-500 mt-1">Min (%)</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Min (%)</p>
                   {errors.thresholdHumidityMin && (
                     <p className="text-xs text-red-600 mt-0.5">{errors.thresholdHumidityMin}</p>
                   )}
@@ -481,21 +483,21 @@ export default function SettingsPage() {
                     name="thresholdHumidityMax"
                     value={formData.thresholdHumidityMax ?? ""}
                     onChange={handleChange}
-                    className={`w-full px-3 py-2 text-sm border rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition ${
+                    className={`w-full px-3 py-2 text-sm border rounded-lg bg-card text-foreground focus:ring-2 focus:ring-[var(--primary)] outline-none transition ${
                       errors.thresholdHumidityMax
-                        ? "border-red-300 bg-red-50"
-                        : "border-slate-300 dark:border-slate-600"
+                        ? "border-destructive bg-destructive/10"
+                        : "border-input"
                     }`}
                   />
-                  <p className="text-[10px] sm:text-xs text-slate-500 mt-1">Max (%)</p>
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1">Max (%)</p>
                   {errors.thresholdHumidityMax && (
                     <p className="text-xs text-red-600 mt-0.5">{errors.thresholdHumidityMax}</p>
                   )}
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-              <span className="text-xs text-amber-800 dark:text-amber-400">
+            <div className="flex items-center gap-2 p-3 bg-muted border border-border rounded-lg">
+              <span className="text-xs text-foreground/80">
                 ⚠️ Perubahan threshold akan memengaruhi garis referensi chart dan trigger alert
               </span>
             </div>
@@ -503,13 +505,13 @@ export default function SettingsPage() {
         </div>
 
         {/* Data Retention */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
-          <h2 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+        <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
+          <h2 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
             <Database className="w-5 h-5 text-purple-500" /> Retensi Data
           </h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-semibold text-foreground mb-2">
                 Hari Penyimpanan Data Historis
               </label>
               <input
@@ -520,22 +522,22 @@ export default function SettingsPage() {
                 name="dataRetentionDays"
                 value={formData.dataRetentionDays ?? ""}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 text-sm border rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition ${
+                className={`w-full px-3 py-2 text-sm border rounded-lg bg-card text-foreground focus:ring-2 focus:ring-[var(--primary)] outline-none transition ${
                   errors.dataRetentionDays
-                    ? "border-red-300 bg-red-50"
-                    : "border-slate-300 dark:border-slate-600"
+                    ? "border-destructive bg-destructive/10"
+                    : "border-input"
                 }`}
               />
               {errors.dataRetentionDays ? (
                 <p className="text-xs text-red-600 mt-1">{errors.dataRetentionDays}</p>
               ) : (
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Data lebih lama dari ini akan otomatis dibersihkan (7–365 hari)
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-              <span className="text-xs text-blue-800 dark:text-blue-400">
+            <div className="flex items-center gap-2 p-3 bg-muted border border-border rounded-lg">
+              <span className="text-xs text-foreground/80">
                 ℹ️ Saat ini menyimpan {formData.dataRetentionDays ?? 90} hari data
               </span>
             </div>
@@ -545,13 +547,13 @@ export default function SettingsPage() {
         </div>
 
         {/* Auto-refresh Interval */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
-          <h2 className="text-base font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+        <div className="bg-card rounded-xl border border-border p-5 shadow-sm">
+          <h2 className="text-base font-bold text-foreground mb-4 flex items-center gap-2">
             <Clock className="w-5 h-5 text-amber-500" /> Interval Auto-refresh
           </h2>
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+              <label className="block text-sm font-semibold text-foreground mb-2">
                 Interval Refresh (detik)
               </label>
               <input
@@ -562,23 +564,23 @@ export default function SettingsPage() {
                 name="monitoringIntervalSeconds"
                 value={formData.monitoringIntervalSeconds ?? ""}
                 onChange={handleChange}
-                className={`w-full px-3 py-2 text-sm border rounded-lg dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none transition ${
+                className={`w-full px-3 py-2 text-sm border rounded-lg bg-card text-foreground focus:ring-2 focus:ring-[var(--primary)] outline-none transition ${
                   errors.monitoringIntervalSeconds
-                    ? "border-red-300 bg-red-50"
-                    : "border-slate-300 dark:border-slate-600"
+                    ? "border-destructive bg-destructive/10"
+                    : "border-input"
                 }`}
               />
               {errors.monitoringIntervalSeconds ? (
                 <p className="text-xs text-red-600 mt-1">{errors.monitoringIntervalSeconds}</p>
               ) : (
-                <p className="text-xs text-slate-500 mt-1">
+                <p className="text-xs text-muted-foreground mt-1">
                   Dashboard & halaman monitoring akan refresh setiap{" "}
                   {formData.monitoringIntervalSeconds ?? 5} detik
                 </p>
               )}
             </div>
-            <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-              <span className="text-xs text-green-800 dark:text-green-400">
+            <div className="flex items-center gap-2 p-3 bg-muted border border-border rounded-lg">
+              <span className="text-xs text-foreground/80">
                 ✓ Interval refresh saat ini: {formData.monitoringIntervalSeconds ?? 5}d
               </span>
             </div>

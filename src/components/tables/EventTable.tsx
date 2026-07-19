@@ -12,14 +12,14 @@ interface EventTableProps {
 
 export default function EventTable({ devices, isLoading = false }: EventTableProps) {
   return (
-    <div className="h-full rounded-xl border bg-white dark:bg-slate-800 dark:border-slate-700 shadow-sm overflow-hidden">
+    <div className="h-full rounded-xl border border-border bg-card shadow-sm overflow-hidden">
       {/* Header */}
       <div className="px-5 pt-5 pb-3 border-b border-slate-100 dark:border-slate-700">
-        <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+        <h2 className="text-base font-bold text-foreground flex items-center gap-2">
           <span className="w-1.5 h-4 bg-emerald-500 rounded-full" />
           Sensor Node Status
         </h2>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           {devices.length} devices
         </p>
       </div>
@@ -27,7 +27,7 @@ export default function EventTable({ devices, isLoading = false }: EventTablePro
       <div className="overflow-auto max-h-[400px]">
         <table className="w-full text-left text-sm">
           <thead>
-            <tr className="border-b border-slate-100 dark:border-slate-700 text-xs font-semibold uppercase text-slate-400 dark:text-slate-500">
+            <tr className="border-b border-border text-xs font-semibold uppercase text-muted-foreground">
               <th className="px-5 py-3">Device</th>
               <th className="px-5 py-3 text-center">Status</th>
               <th className="px-5 py-3 text-right">Last Read</th>
@@ -36,10 +36,10 @@ export default function EventTable({ devices, isLoading = false }: EventTablePro
           <tbody>
             {isLoading ? (
               Array.from({ length: 4 }).map((_, idx) => (
-                <tr key={idx} className="border-b border-slate-50 dark:border-slate-700/50">
+                <tr key={idx} className="border-b border-border/50">
                   <td className="px-5 py-3.5">
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse" />
+                      <div className="w-9 h-9 rounded-lg bg-muted animate-pulse" />
                       <div>
                         <div className="h-4 w-24 bg-slate-200 dark:bg-slate-700 rounded animate-pulse mb-1.5" />
                         <div className="h-3 w-16 bg-slate-200 dark:bg-slate-700 rounded animate-pulse" />
@@ -62,25 +62,25 @@ export default function EventTable({ devices, isLoading = false }: EventTablePro
                 return (
                   <tr
                     key={device.id}
-                    className="border-b border-slate-50 dark:border-slate-700/50 last:border-none transition-colors hover:bg-slate-50 dark:hover:bg-slate-700/30"
+                    className="border-b border-border/50 last:border-none transition-colors hover:bg-muted/50"
                   >
                     <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
                         {/* Avatar */}
                         <div
                           className={`w-9 h-9 rounded-lg flex items-center justify-center text-xs font-bold shrink-0 ${
-                            isOffline
-                              ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-                              : "bg-gradient-to-br from-blue-500 to-indigo-600 text-white"
-                          }`}
+                                                      isOffline
+                                                        ? "bg-[var(--cpems-offline)]/10 text-[var(--cpems-offline)]"
+                                                        : "bg-[var(--primary)] text-white"
+                                                    }`}
                         >
                           {device.name.charAt(0).toUpperCase()}
                         </div>
                         <div className="min-w-0">
-                          <div className="font-semibold text-slate-900 dark:text-white truncate">
+                          <div className="font-semibold text-foreground truncate">
                             {device.name}
                           </div>
-                          <div className="text-xs text-slate-400 dark:text-slate-500 truncate">
+                          <div className="text-xs text-muted-foreground truncate">
                             {device.location}
                           </div>
                         </div>
@@ -90,9 +90,9 @@ export default function EventTable({ devices, isLoading = false }: EventTablePro
                       <StatusBadge status={device.status} />
                     </td>
                     <td className="px-5 py-3.5 text-right">
-                      <div className="flex items-center justify-end gap-1.5 text-xs text-slate-500 dark:text-slate-400">
+                      <div className="flex items-center justify-end gap-1.5 text-xs text-muted-foreground">
                         <Clock className="w-3 h-3" />
-                        <span className="font-mono whitespace-nowrap">
+                        <span className="font-data whitespace-nowrap">
                           {formatWIB(latestReading?.time, "medium")}
                         </span>
                       </div>
@@ -106,7 +106,7 @@ export default function EventTable({ devices, isLoading = false }: EventTablePro
 
         {!isLoading && devices.length === 0 && (
           <div className="py-10 text-center">
-            <p className="text-sm text-slate-400 dark:text-slate-500">Tidak ada device ditemukan</p>
+            <p className="text-sm text-muted-foreground">Tidak ada device ditemukan</p>
           </div>
         )}
       </div>

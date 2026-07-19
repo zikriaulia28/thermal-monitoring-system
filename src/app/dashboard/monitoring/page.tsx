@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 import MonitoringHeader from "@/components/monitoring/MonitoringHeader";
 import EnhancedMonitoringChart from "@/components/monitoring/EnhancedMonitoringChart";
@@ -12,6 +13,7 @@ import { getMonitoringData } from "@/services/monitoring.service";
 import { transformMonitoringData } from "@/lib/chartUtils";
 
 export default function MonitoringPage() {
+  usePageTitle("Monitoring");
   const [devices, setDevices] = useState<Device[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<MonitoringTimeRange>("1h");
