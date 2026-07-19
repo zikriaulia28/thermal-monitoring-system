@@ -10,11 +10,13 @@ import {
   YAxis,
   Tooltip,
   Legend,
+  ReferenceLine,
 } from "recharts";
 import { Thermometer, Droplets } from "lucide-react";
 import { Device } from "@/types/device";
 import { formatWIB } from "@/lib/formatWIB";
 import { buildComparisonData, getDeviceByLocation } from "@/lib/chartUtils";
+import { useThresholds } from "@/hooks/useThresholds";
 
 interface Props {
   devices: Device[];
@@ -32,6 +34,7 @@ export default function DashboardChart({ devices, isLoading = false }: Props) {
 
   const isTemperature = activeTab === "temperature";
   const unit = isTemperature ? "°C" : "%";
+  const { tempMin, tempMax, tempWarning, humMin, humMax } = useThresholds();
 
   const chartData = useMemo(() => {
     if (!devices || devices.length === 0) return [];
@@ -81,7 +84,7 @@ export default function DashboardChart({ devices, isLoading = false }: Props) {
               }`}
             >
               <Thermometer className="w-3.5 h-3.5" />
-              Suhu
+              Temperature
             </button>
             <button
               onClick={() => setActiveTab("humidity")}
@@ -92,7 +95,7 @@ export default function DashboardChart({ devices, isLoading = false }: Props) {
               }`}
             >
               <Droplets className="w-3.5 h-3.5" />
-              Lembap
+              Humidity
             </button>
           </div>
         </div>
@@ -140,6 +143,22 @@ export default function DashboardChart({ devices, isLoading = false }: Props) {
                 formatter={(value, name) => [`${Number(value ?? 0).toFixed(1)} ${unit}`, name]}
               />
               <Legend wrapperStyle={{ fontSize: 11, paddingTop: "8px" }} iconType="circle" iconSize={8} />
+
+              {isTemperature && (
+                <>
+                  <ReferenceLine y={tempMax} stroke="#dc2626" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `CRIT ${tempMax}°C`, position: "insideTopRight", fill: "#dc2626", fontSize: 10, fontWeight: "bold" }} />
+                  <ReferenceLine y={tempWarning} stroke="#f59e0b" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `WARN ${tempWarning.toFixed(0)}°C`, position: "insideTopRight", fill: "#f59e0b", fontSize: 10, fontWeight: "bold" }} />
+                  <ReferenceLine y={tempMin} stroke="#3b82f6" strokeDasharray="4 4" strokeWidth={1.5} label={{ value: `LOW ${tempMin}°C`, position: "insideBottomRight", fill: "#3b82f6", fontSize: 10, fontWeight: "bold" }} />
+                </>
+              )}
+
+              {!isTemperature && (
+                <>
+                  <ReferenceLine y={humMax} stroke="#dc2626" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `CRIT ${humMax}%`, position: "insideTopRight", fill: "#dc2626", fontSize: 10, fontWeight: "bold" }} />
+                  <ReferenceLine y={humMin} stroke="#dc2626" strokeDasharray="6 3" strokeWidth={1.5} label={{ value: `CRIT ${humMin}%`, position: "insideBottomRight", fill: "#dc2626", fontSize: 10, fontWeight: "bold" }} />
+                </>
+              )}
+
               {keys.map((key) => (
                 <Line
                   key={key}
