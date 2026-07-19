@@ -10,9 +10,11 @@ import DeviceDetailModal from "./DeviceDetailModal";
 
 interface Props {
   device: Device;
+  variant?: "full" | "compact";
 }
 
-export default function DeviceCard({ device }: Props) {
+export default function DeviceCard({ device, variant = "full" }: Props) {
+  const compact = variant === "compact";
   const latest = device.readings.at(-1);
   const [open, setOpen] = useState(false);
 
@@ -77,10 +79,20 @@ export default function DeviceCard({ device }: Props) {
           </div>
         </div>
         <DeviceStatusBadge status={device.status} />
+        {compact && (isAlert || nearBreach) && (
+          <span
+            className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+              isAlert
+                ? "bg-[var(--cpems-offline)]"
+                : "bg-amber-500"
+            }`}
+            title={isAlert ? "Alert" : "Nyaris breach"}
+          />
+        )}
       </div>
 
-      {/* ── Alert Warning / Near Breach ── */}
-      {isAlert && (
+      {/* ── Alert Warning / Near Breach (full only) ── */}
+      {!compact && isAlert && (
         <div className="flex items-center gap-2 px-3 py-2 bg-red-100 dark:bg-red-900/20 rounded-lg mb-3">
           <AlertTriangle className="w-3.5 h-3.5 text-red-600 dark:text-red-400 shrink-0" />
           <span className="text-xs font-medium text-red-700 dark:text-red-400">
@@ -95,7 +107,7 @@ export default function DeviceCard({ device }: Props) {
         </div>
       )}
 
-      {nearBreach && (
+      {!compact && nearBreach && (
         <div className="flex items-center gap-2 px-3 py-2 bg-amber-100 dark:bg-amber-900/20 rounded-lg mb-3">
           <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
           <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
@@ -131,6 +143,7 @@ export default function DeviceCard({ device }: Props) {
             </div>
           </div>
           {/* Progress bar */}
+          {!compact && (
           <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
@@ -145,8 +158,11 @@ export default function DeviceCard({ device }: Props) {
               }}
             />
           </div>
+          )}
           {/* Mini sparkline */}
+          {!compact && (
           <MiniSparkline data={sparkData.map((r) => r.temperature)} color={tempCritical ? "#ef4444" : "#3b82f6"} />
+          )}
         </div>
 
         {/* Humidity */}
@@ -172,6 +188,7 @@ export default function DeviceCard({ device }: Props) {
             </div>
           </div>
           {/* Progress bar */}
+          {!compact && (
           <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
@@ -186,11 +203,17 @@ export default function DeviceCard({ device }: Props) {
               }}
             />
           </div>
+          )}
           {/* Mini sparkline */}
+          {!compact && (
           <MiniSparkline data={sparkData.map((r) => r.humidity)} color={humCritical ? "#eab308" : "#3b82f6"} />
+          )}
         </div>
       </div>
 
+      {/* ── Last Seen + Detail (full only) ── */}
+      {!compact && (
+        <>
       {/* ── Last Seen ── */}
       <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-700 pt-3 mb-3">
         <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-500">
@@ -224,6 +247,8 @@ export default function DeviceCard({ device }: Props) {
         open={open}
         onClose={() => setOpen(false)}
       />
+        </>
+      )}
     </div>
   );
 }
