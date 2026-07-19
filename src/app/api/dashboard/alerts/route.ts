@@ -58,7 +58,7 @@ export async function GET(req: NextRequest) {
       ]),
       prisma.alert.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        orderBy: [{ acknowledged: "asc" }, { createdAt: "desc" }],
         skip,
         take: limit,
       }),
