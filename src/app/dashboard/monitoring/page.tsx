@@ -5,7 +5,7 @@ import { usePageTitle } from "@/hooks/usePageTitle";
 
 import MonitoringHeader from "@/components/monitoring/MonitoringHeader";
 import EnhancedMonitoringChart from "@/components/monitoring/EnhancedMonitoringChart";
-import MonitoringGrid from "@/components/monitoring/MonitoringGrid";
+import DeviceCard from "@/components/devices/DeviceCard";
 
 import { Device } from "@/types/device";
 import { MonitoringTimeRange } from "@/types/monitoring";
@@ -93,7 +93,13 @@ export default function MonitoringPage() {
         isLoading={isLoading}
       />
 
-      {!isLoading && <MonitoringGrid devices={devices} />}
+      {!isLoading && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+          {devices.map((device) => (
+            <DeviceCard key={device.id} device={device} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

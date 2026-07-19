@@ -2,8 +2,7 @@ import { Device } from "@/types/device";
 
 export async function getDevices(): Promise<Device[]> {
   const res = await fetch("/api/dashboard/chart", {
-    cache: "force-cache",
-    next: { revalidate: 60 },
+    cache: "no-store",
   });
 
   if (!res.ok) {
