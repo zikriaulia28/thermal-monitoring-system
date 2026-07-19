@@ -17,7 +17,7 @@ import {
 import StatCard from "@/components/cards/StatCard";
 import RealtimeChart from "@/components/charts/RealtimeChart";
 import DeviceMetrics from "@/components/charts/DeviceMetrics";
-import EventTable from "@/components/tables/EventTable";
+import EventLog from "@/components/tables/EventLog";
 import TimeRangeFilter from "@/components/filters/TimeRangeFilter";
 
 import { TimeRange } from "@/types/filter";
@@ -303,7 +303,7 @@ export default function DashboardPage() {
           />
         </div>
         <div className="w-full xl:col-span-1">
-          <EventTable devices={devices ?? []} isLoading={isLoading} />
+          <EventLog alerts={alertsRes?.data ?? []} isLoading={isLoading} />
         </div>
       </div>
     </div>
