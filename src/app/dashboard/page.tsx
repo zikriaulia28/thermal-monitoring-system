@@ -16,6 +16,7 @@ import {
 
 import StatCard from "@/components/cards/StatCard";
 import DeviceMetrics from "@/components/charts/DeviceMetrics";
+import DashboardChart from "@/components/charts/DashboardChart";
 import EventLog from "@/components/tables/EventLog";
 import TimeRangeFilter from "@/components/filters/TimeRangeFilter";
 
@@ -290,8 +291,11 @@ export default function DashboardPage() {
       )}
 
       {/* MAIN CONTENT */}
-      <div className="w-full grid grid-cols-1 gap-4 sm:gap-6">
-        <div className="w-full">
+      <div className="w-full grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
+        <div className="w-full xl:col-span-2">
+          <DashboardChart devices={devices ?? []} isLoading={isLoading} />
+        </div>
+        <div className="w-full xl:col-span-1">
           <EventLog alerts={alertsRes?.data ?? []} isLoading={isLoading} />
         </div>
       </div>
