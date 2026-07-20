@@ -62,6 +62,13 @@ export default function DashboardPage() {
     { refreshInterval: 120000, revalidateOnFocus: false },
   );
 
+  // Array alert terbaru khusus Event Log (endpoint summary hanya return count)
+  const { data: recentAlerts } = useSWR(
+    "/api/dashboard/alerts?limit=5",
+    fetcher,
+    { refreshInterval: 120000, revalidateOnFocus: false },
+  );
+
   const dailyParams = new URLSearchParams({ range: "realtime" });
 
   const { data: dailyRes } = useSWR(
@@ -284,11 +291,11 @@ export default function DashboardPage() {
 
       {/* MAIN CONTENT */}
       <div className="w-full grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
-        <div className="w-full xl:col-span-2">
+        <div className="w-full xl:col-span-2 h-[360px]">
           <DashboardChart devices={Array.isArray(devices) ? devices : []} isLoading={isLoading} />
         </div>
         <div className="w-full xl:col-span-1">
-          <EventLog alerts={alertsRes?.data ?? []} isLoading={isLoading} />
+          <EventLog alerts={recentAlerts?.data ?? []} isLoading={isLoading} />
         </div>
       </div>
     </div>
