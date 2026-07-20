@@ -6,7 +6,7 @@ import { formatWIB, formatDurationSince } from "@/lib/formatWIB";
 
 type Severity = "CRITICAL" | "WARNING" | "INFO" | string;
 
-interface AlertItem {
+export interface AlertItem {
   id: string;
   deviceId: string;
   location: string;
