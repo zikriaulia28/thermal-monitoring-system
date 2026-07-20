@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import dynamic from "next/dynamic";
 import useSWR from "swr";
 import { usePageTitle } from "@/hooks/usePageTitle";
 import {
@@ -16,9 +17,23 @@ import {
 
 import StatCard from "@/components/cards/StatCard";
 import DeviceMetrics from "@/components/charts/DeviceMetrics";
-import DashboardChart from "@/components/charts/DashboardChart";
 import EventLog from "@/components/tables/EventLog";
 import { Device } from "@/types/device";
+
+// Recharts berat (~150KB+) — lazy load biar tidak blocking First Load JS
+const DashboardChart = dynamic(
+  () => import("@/components/charts/DashboardChart"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="col-span-1 lg:col-span-2 rounded-xl border bg-card border-border shadow-sm p-6">
+        <div className="h-[320px] flex items-center justify-center text-muted-foreground text-sm">
+          Memuat grafik…
+        </div>
+      </div>
+    ),
+  },
+);
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 

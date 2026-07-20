@@ -154,10 +154,10 @@ function ReportsContent() {
       const columnLabels = columns.map((col) => formatColumnHeader(col));
 
       if (format === "csv") {
-        exportToCSV(formattedData, filename, columnLabels);
+        await exportToCSV(formattedData, filename, columnLabels);
         showToast("success", "CSV berhasil didownload");
       } else {
-        exportToPDF(formattedData, filename, columns, columnLabels);
+        await exportToPDF(formattedData, filename, columns, columnLabels);
         showToast("success", "PDF berhasil didownload");
       }
     } catch (error) {
