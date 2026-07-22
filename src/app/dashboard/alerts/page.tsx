@@ -88,7 +88,7 @@ function AlertsContent() {
         setAckAllLoading(false);
       }
     },
-    [response, mutate, showToast],
+    [response, mutate, showToast, refreshCritical],
   );
 
   const hasUnacked = (response?.data ?? []).some((a) => !a.acknowledged);
@@ -142,7 +142,7 @@ function AlertsContent() {
         setAckLoadingId(null);
       }
     },
-    [response, mutate, showToast],
+    [response, mutate, showToast, refreshCritical],
   );
 
   // Reset to page 1 when filters change
