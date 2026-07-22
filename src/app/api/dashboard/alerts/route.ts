@@ -96,21 +96,26 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: Request) {
   try {
-    const { id } = await req.json();
+    const body = await req.json();
+    const ids: string[] = body.ids?.length
+      ? body.ids
+      : body.id
+        ? [body.id]
+        : [];
 
-    if (!id) {
+    if (ids.length === 0) {
       return NextResponse.json(
         { success: false, message: "Alert ID is required" },
         { status: 400 },
       );
     }
 
-    await prisma.alert.update({
-      where: { id },
+    await prisma.alert.updateMany({
+      where: { id: { in: ids } },
       data: { acknowledged: true },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, count: ids.length });
   } catch (error) {
     logger.error("ALERTS_PATCH", error);
     return NextResponse.json(

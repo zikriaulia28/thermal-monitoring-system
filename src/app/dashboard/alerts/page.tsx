@@ -9,7 +9,8 @@ import AlertTable from "@/components/alerts/AlertTable";
 import AlertFilter from "@/components/alerts/AlertFilter";
 import { ToastProvider, useToast } from "@/components/ui/Toast";
 
-import { acknowledgeAlert, getAlerts } from "@/services/alertService";
+import { acknowledgeAlert, acknowledgeAllAlerts, getAlerts } from "@/services/alertService";
+import { useAlarmSound } from "@/hooks/useAlarmSound";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 
 function AlertsContent() {
@@ -19,8 +20,10 @@ function AlertsContent() {
   const [severity, setSeverity] = useState("");
   const [status, setStatus] = useState("");
   const [ackLoadingId, setAckLoadingId] = useState<string | null>(null);
+  const [ackAllLoading, setAckAllLoading] = useState(false);
 
   const { showToast } = useToast();
+  const { refreshCritical } = useAlarmSound();
 
   const {
     data: response,
@@ -46,6 +49,49 @@ function AlertsContent() {
   const totalAlerts = response?.pagination?.total || 0;
   const totalPages = Math.ceil(totalAlerts / 10);
   const summary = response?.summary;
+
+  const handleAcknowledgeAll = useCallback(
+    async () => {
+      if (!response) return;
+      const unacked = response.data.filter((a) => !a.acknowledged);
+      if (unacked.length === 0) return;
+
+      const previousData = response;
+      const ids = unacked.map((a) => a.id);
+
+      mutate(
+        {
+          ...response,
+          data: response.data.map((a) => ({ ...a, acknowledged: true })),
+          summary: {
+            ...response.summary,
+            active: 0,
+            ack: response.summary.ack + ids.length,
+            critical: 0,
+          },
+        },
+        false,
+      );
+
+      setAckAllLoading(true);
+      try {
+        await acknowledgeAllAlerts(ids);
+        refreshCritical();
+        window.dispatchEvent(new Event("alerts-changed"));
+        mutate();
+        showToast("success", `${ids.length} alert berhasil di-acknowledge.`);
+      } catch (error) {
+        console.error("Failed to acknowledge all:", error);
+        mutate(previousData, false);
+        showToast("error", "Gagal meng-acknowledge alert. Silakan coba lagi.");
+      } finally {
+        setAckAllLoading(false);
+      }
+    },
+    [response, mutate, showToast],
+  );
+
+  const hasUnacked = (response?.data ?? []).some((a) => !a.acknowledged);
 
   const handleAcknowledge = useCallback(
     async (id: string) => {
@@ -84,6 +130,8 @@ function AlertsContent() {
 
       try {
         await acknowledgeAlert(id);
+        refreshCritical();
+        window.dispatchEvent(new Event("alerts-changed"));
         mutate();
         showToast("success", "Alert berhasil di-acknowledge.");
       } catch (error) {
@@ -176,6 +224,9 @@ function AlertsContent() {
           alerts={alerts}
           onAcknowledge={handleAcknowledge}
           ackLoadingId={ackLoadingId}
+          onAcknowledgeAll={handleAcknowledgeAll}
+          ackAllLoading={ackAllLoading}
+          hasUnacked={hasUnacked}
           pagination={
             totalPages > 1
               ? {
