@@ -14,7 +14,7 @@ export default function StatusBadge({ status }: Props) {
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-        styles[status] || "bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300"
+        styles[status] || "bg-muted text-muted-foreground"
       }`}
     >
       <span className="relative flex h-2 w-2">
@@ -23,7 +23,7 @@ export default function StatusBadge({ status }: Props) {
         )}
         <span
           className={`relative inline-flex h-2 w-2 rounded-full ${
-            status === "online" ? "bg-green-500" : status === "offline" ? "bg-red-500" : "bg-slate-500"
+            status === "online" ? "bg-green-500" : status === "offline" ? "bg-red-500" : "bg-muted-foreground"
           }`}
         />
       </span>

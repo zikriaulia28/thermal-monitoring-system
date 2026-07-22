@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { prisma, getCachedSettings } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { NextResponse } from "next/server";
 import { getOfflineThresholdMs } from "@/lib/deviceStatus";
@@ -6,7 +6,7 @@ import { getOfflineThresholdMs } from "@/lib/deviceStatus";
 export async function GET() {
   try {
     // Fetch settings for adaptive threshold
-    const settings = await prisma.settings.findFirst();
+    const settings = await getCachedSettings();
     const intervalSeconds = settings?.monitoringIntervalSeconds;
 
     const devices = await prisma.device.findMany({

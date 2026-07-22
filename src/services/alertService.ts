@@ -42,10 +42,7 @@ export async function getAlerts(
     params.set("status", filters.status);
   }
 
-  const response = await fetch(`/api/dashboard/alerts?${params.toString()}`, {
-    cache: "force-cache",
-    next: { revalidate: 30 },
-  });
+  const response = await fetch(`/api/dashboard/alerts?${params.toString()}`);
 
   if (!response.ok) {
     throw new Error("Failed to fetch alerts");
@@ -55,7 +52,7 @@ export async function getAlerts(
 }
 
 export async function acknowledgeAlert(id: string): Promise<void> {
-  const response = await fetch("/api/dashboard/alerts", {
+  const response = await fetch(`/api/dashboard/alerts`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
@@ -65,5 +62,20 @@ export async function acknowledgeAlert(id: string): Promise<void> {
 
   if (!response.ok) {
     throw new Error("Failed to acknowledge alert");
+  }
+}
+
+export async function acknowledgeAllAlerts(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
+  const response = await fetch(`/api/dashboard/alerts`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ ids }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to acknowledge alerts");
   }
 }

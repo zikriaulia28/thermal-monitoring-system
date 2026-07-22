@@ -61,7 +61,7 @@ export default function TimeRangeFilter({
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="flex items-center gap-2.5 px-4 py-2.5
-                   bg-white dark:bg-slate-800
+                   bg-card
                    border border-slate-200 dark:border-slate-700
                    rounded-xl shadow-sm
                    hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-md

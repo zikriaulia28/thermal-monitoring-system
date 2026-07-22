@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useReportData } from "@/hooks/useReportData";
 import { ReportType } from "@/types/reports";
+import { usePageTitle } from "@/hooks/usePageTitle";
 import {
   FileText,
   Download,
@@ -28,6 +29,7 @@ function getDefaultDateRange(): { startDate: string; endDate: string } {
 }
 
 function ReportsContent() {
+  usePageTitle("Reports");
   const { startDate: defaultStart, endDate: defaultEnd } = getDefaultDateRange();
 
   const [reportType, setReportType] = useState<ReportType>("summary");
@@ -71,10 +73,10 @@ function ReportsContent() {
     return data;
   }, [data, reportType]);
 
-  const reportTypes: { value: ReportType; label: string; icon: React.ReactNode; accent: string }[] = [
-    { value: "summary", label: "Ringkasan Harian", icon: <Calendar className="w-4 h-4" />, accent: "from-blue-500 to-indigo-500" },
-    { value: "detailed", label: "Log Detail", icon: <FileJson className="w-4 h-4" />, accent: "from-emerald-500 to-teal-500" },
-    { value: "alerts", label: "Laporan Alert", icon: <AlertTriangle className="w-4 h-4" />, accent: "from-red-500 to-rose-500" },
+  const reportTypes: { value: ReportType; label: string; icon: React.ReactNode }[] = [
+    { value: "summary", label: "Ringkasan Harian", icon: <Calendar className="w-4 h-4" /> },
+    { value: "detailed", label: "Log Detail", icon: <FileJson className="w-4 h-4" /> },
+    { value: "alerts", label: "Laporan Alert", icon: <AlertTriangle className="w-4 h-4" /> },
   ];
 
   const getTableColumns = (): string[] => {
@@ -152,10 +154,10 @@ function ReportsContent() {
       const columnLabels = columns.map((col) => formatColumnHeader(col));
 
       if (format === "csv") {
-        exportToCSV(formattedData, filename, columnLabels);
+        await exportToCSV(formattedData, filename, columnLabels);
         showToast("success", "CSV berhasil didownload");
       } else {
-        exportToPDF(formattedData, filename, columns, columnLabels);
+        await exportToPDF(formattedData, filename, columns, columnLabels);
         showToast("success", "PDF berhasil didownload");
       }
     } catch (error) {
@@ -171,14 +173,14 @@ function ReportsContent() {
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg shadow-purple-500/20">
+          <div className="w-10 h-10 rounded-xl bg-[var(--primary)] flex items-center justify-center shadow-sm">
             <FileText className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-slate-900 dark:text-white">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground">
               Reports
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Generate dan export laporan sistem
             </p>
           </div>
@@ -195,8 +197,8 @@ function ReportsContent() {
               onClick={() => { setReportType(type.value); setCurrentPage(1); }}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
                 isActive
-                  ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
-                  : "bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-300 dark:hover:border-blue-600 hover:shadow-sm"
+                  ? "bg-[var(--primary)] text-white shadow-md"
+                  : "bg-card border border-border text-foreground hover:border-[var(--primary)] hover:shadow-sm"
               }`}
             >
               {type.icon}
@@ -207,46 +209,46 @@ function ReportsContent() {
       </div>
 
       {/* Filters */}
-      <div className="relative overflow-hidden rounded-xl border bg-white dark:bg-slate-800 dark:border-slate-700 shadow-sm">
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-violet-500" />
+      <div className="relative overflow-hidden rounded-xl border bg-card border-border shadow-sm">
+        <div className="absolute top-0 left-0 right-0 h-1 bg-[var(--primary)]" />
         <div className="p-4 sm:p-6 pt-5">
           <div className="flex items-center gap-2 mb-4">
-            <SlidersHorizontal className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-            <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">Filter Laporan</h2>
+            <SlidersHorizontal className="w-4 h-4 text-muted-foreground" />
+            <h2 className="text-sm font-semibold text-foreground">Filter Laporan</h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div>
-              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Tanggal Mulai</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Tanggal Mulai</label>
               <input
                 type="date"
                 value={startDate}
                 onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
-                className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="w-full px-3 py-2.5 text-sm border border-border rounded-xl dark:bg-card dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Tanggal Akhir</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Tanggal Akhir</label>
               <input
                 type="date"
                 value={endDate}
                 onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
-                className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                className="w-full px-3 py-2.5 text-sm border border-border rounded-xl dark:bg-card dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
               />
             </div>
 
             {reportType !== "alerts" && (
               <div>
-                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Lokasi</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">Lokasi</label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <input
                     type="text"
                     placeholder="Filter lokasi..."
                     value={location}
                     onChange={(e) => { setLocation(e.target.value); setCurrentPage(1); }}
-                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-border rounded-xl dark:bg-card dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
                   />
                 </div>
               </div>
@@ -254,13 +256,13 @@ function ReportsContent() {
 
             {reportType === "alerts" && (
               <div>
-                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1.5">Severity</label>
+                <label className="block text-xs font-medium text-muted-foreground mb-1.5">Severity</label>
                 <div className="relative">
-                  <AlertTriangle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <AlertTriangle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <select
                     value={severity}
                     onChange={(e) => { setSeverity(e.target.value); setCurrentPage(1); }}
-                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-xl dark:bg-slate-700 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none"
+                    className="w-full pl-9 pr-3 py-2.5 text-sm border border-border rounded-xl dark:bg-card dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors appearance-none"
                   >
                     <option value="">Semua Severity</option>
                     <option value="WARNING">Warning</option>
@@ -275,32 +277,29 @@ function ReportsContent() {
 
       {/* Summary Stats */}
       {summary && (
-        <div className="relative overflow-hidden rounded-xl border bg-white dark:bg-slate-800 dark:border-slate-700 shadow-sm">
-          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 to-cyan-500" />
-          <div className="p-4 sm:p-5">
-            <div className="flex flex-wrap items-center gap-4 text-sm">
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Periode:</span>
-                <span className="font-semibold text-slate-800 dark:text-white">{summary.period}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Total Record:</span>
-                <span className="font-semibold text-slate-800 dark:text-white">{summary.totalRecords}</span>
-              </div>
-              {reportType === "alerts" && summary.critical !== undefined && (
-                <>
-                  <span className="flex items-center gap-1.5 text-xs font-medium text-red-600">
-                    <span className="w-2 h-2 rounded-full bg-red-500" /> Critical: {summary.critical}
-                  </span>
-                  <span className="flex items-center gap-1.5 text-xs font-medium text-amber-600">
-                    <span className="w-2 h-2 rounded-full bg-amber-500" /> Warning: {summary.warning}
-                  </span>
-                  <span className="flex items-center gap-1.5 text-xs font-medium text-blue-600">
-                    <span className="w-2 h-2 rounded-full bg-blue-500" /> Pending: {summary.pending}
-                  </span>
-                </>
-              )}
+        <div className="rounded-xl border bg-card shadow-sm p-4 sm:p-5">
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground">Periode:</span>
+              <span className="font-semibold text-foreground">{summary.period}</span>
             </div>
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-medium text-muted-foreground">Total Record:</span>
+              <span className="font-semibold text-foreground">{summary.totalRecords}</span>
+            </div>
+            {reportType === "alerts" && summary.critical !== undefined && (
+              <>
+                <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--cpems-offline)]">
+                  <span className="w-2 h-2 rounded-full bg-[var(--cpems-offline)]" /> Critical: {summary.critical}
+                </span>
+                <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--cpems-warning)]">
+                  <span className="w-2 h-2 rounded-full bg-[var(--cpems-warning)]" /> Warning: {summary.warning}
+                </span>
+                <span className="flex items-center gap-1.5 text-xs font-medium text-[var(--primary)]">
+                  <span className="w-2 h-2 rounded-full bg-[var(--primary)]" /> Pending: {summary.pending}
+                </span>
+              </>
+            )}
           </div>
         </div>
       )}
@@ -310,7 +309,7 @@ function ReportsContent() {
         <button
           onClick={() => handleExport("csv")}
           disabled={isLoading || data.length === 0 || exporting !== null}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl shadow-sm hover:shadow-md transition-all"
+          className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl shadow-sm hover:shadow-md transition-all"
         >
           {exporting === "csv" ? (
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -323,7 +322,7 @@ function ReportsContent() {
         <button
           onClick={() => handleExport("pdf")}
           disabled={isLoading || data.length === 0 || exporting !== null}
-          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-500 to-rose-500 hover:from-red-600 hover:to-rose-600 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl shadow-sm hover:shadow-md transition-all"
+          className="flex items-center gap-2 px-4 py-2.5 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl shadow-sm hover:shadow-md transition-all"
         >
           {exporting === "pdf" ? (
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -335,27 +334,27 @@ function ReportsContent() {
       </div>
 
       {/* Data Table */}
-      <div className="relative overflow-hidden rounded-xl border bg-white dark:bg-slate-800 dark:border-slate-700 shadow-sm">
+      <div className="rounded-xl border bg-card shadow-sm">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center p-10 sm:p-14">
             <div className="relative">
-              <div className="w-12 h-12 rounded-full border-4 border-slate-200 dark:border-slate-700" />
-              <div className="w-12 h-12 rounded-full border-4 border-blue-500 border-t-transparent animate-spin absolute inset-0" />
+              <div className="w-12 h-12 rounded-full border-4 border-muted" />
+              <div className="w-12 h-12 rounded-full border-4 border-[var(--primary)] border-t-transparent animate-spin absolute inset-0" />
             </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-3">Memuat data laporan...</p>
+            <p className="text-sm text-muted-foreground mt-3">Memuat data laporan...</p>
           </div>
         ) : displayData.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-10 sm:p-14">
-            <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-700 mb-3">
-              <Search className="w-10 h-10 text-slate-400 dark:text-slate-500" />
+            <div className="p-3 rounded-xl bg-muted mb-3">
+              <Search className="w-10 h-10 text-muted-foreground/40" />
             </div>
-            <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">Tidak Ada Data</p>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Coba ubah filter atau rentang tanggal</p>
+            <p className="text-sm font-semibold text-foreground">Tidak Ada Data</p>
+            <p className="text-xs text-muted-foreground mt-1">Coba ubah filter atau rentang tanggal</p>
           </div>
         ) : (
           <>
             {/* Mobile Card Layout */}
-            <div className="md:hidden divide-y divide-slate-200 dark:divide-slate-700">
+            <div className="md:hidden divide-y divide-border">
               {displayData.map((row: Record<string, unknown>, idx: number) => (
                 <div key={idx} className="p-3 space-y-2">
                   <div className="flex items-center justify-between">
@@ -363,18 +362,18 @@ function ReportsContent() {
                       <span
                         className={`px-2 py-1 rounded text-xs font-medium ${
                           row.severity === "CRITICAL"
-                            ? "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400"
-                            : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400"
+                            ? "bg-[var(--cpems-offline)]/10 text-[var(--cpems-offline)]"
+                            : "bg-[var(--cpems-warning)]/10 text-[var(--cpems-warning)]"
                         }`}
                       >
                         {String(row.severity)}
                       </span>
                     )}
                     {reportType === "summary" && (
-                      <span className="text-xs font-medium text-slate-900 dark:text-white">{String(row.date)}</span>
+                      <span className="text-xs font-medium text-foreground">{String(row.date)}</span>
                     )}
                     {reportType === "detailed" && (
-                      <span className="text-xs text-slate-500 dark:text-slate-400">{String(row.time)}</span>
+                      <span className="text-xs text-muted-foreground">{String(row.time)}</span>
                     )}
                     {row.acknowledged !== undefined && (
                       <span
@@ -390,58 +389,58 @@ function ReportsContent() {
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
-                      <span className="text-slate-500 dark:text-slate-400">Device:</span>
-                      <span className="ml-1 text-slate-900 dark:text-white truncate">{String(row.device || row.location || "-")}</span>
+                      <span className="text-muted-foreground">Device:</span>
+                      <span className="ml-1 text-foreground truncate">{String(row.device || row.location || "-")}</span>
                     </div>
                     {reportType === "summary" && (
                       <>
                         <div>
-                          <span className="text-slate-500 dark:text-slate-400">Suhu:</span>
-                          <span className="ml-1 text-slate-900 dark:text-white">{formatValue("tempAvg", row.tempAvg)}°C</span>
+                          <span className="text-muted-foreground">Suhu:</span>
+                          <span className="ml-1 text-foreground">{formatValue("tempAvg", row.tempAvg)}°C</span>
                         </div>
                         <div>
-                          <span className="text-slate-500 dark:text-slate-400">Kelembaban:</span>
-                          <span className="ml-1 text-slate-900 dark:text-white">{formatValue("humidityAvg", row.humidityAvg)}%</span>
+                          <span className="text-muted-foreground">Kelembaban:</span>
+                          <span className="ml-1 text-foreground">{formatValue("humidityAvg", row.humidityAvg)}%</span>
                         </div>
                         <div>
-                          <span className="text-slate-500 dark:text-slate-400">Alert:</span>
-                          <span className="ml-1 text-slate-900 dark:text-white">{String(row.alertCount || 0)}</span>
+                          <span className="text-muted-foreground">Alert:</span>
+                          <span className="ml-1 text-foreground">{String(row.alertCount || 0)}</span>
                         </div>
                       </>
                     )}
                     {reportType === "detailed" && (
                       <>
                         <div>
-                          <span className="text-slate-500 dark:text-slate-400">Device:</span>
-                          <span className="ml-1 text-slate-900 dark:text-white truncate">{String(row.device || "-")}</span>
+                          <span className="text-muted-foreground">Device:</span>
+                          <span className="ml-1 text-foreground truncate">{String(row.device || "-")}</span>
                         </div>
                         <div>
-                          <span className="text-slate-500 dark:text-slate-400">Lokasi:</span>
-                          <span className="ml-1 text-slate-900 dark:text-white truncate">{String(row.location || "-")}</span>
+                          <span className="text-muted-foreground">Lokasi:</span>
+                          <span className="ml-1 text-foreground truncate">{String(row.location || "-")}</span>
                         </div>
                         <div>
-                          <span className="text-slate-500 dark:text-slate-400">Suhu:</span>
-                          <span className="ml-1 text-slate-900 dark:text-white">{formatValue("temperature", row.temperature)}°C</span>
+                          <span className="text-muted-foreground">Suhu:</span>
+                          <span className="ml-1 text-foreground">{formatValue("temperature", row.temperature)}°C</span>
                         </div>
                         <div>
-                          <span className="text-slate-500 dark:text-slate-400">Kelembaban:</span>
-                          <span className="ml-1 text-slate-900 dark:text-white">{formatValue("humidity", row.humidity)}%</span>
+                          <span className="text-muted-foreground">Kelembaban:</span>
+                          <span className="ml-1 text-foreground">{formatValue("humidity", row.humidity)}%</span>
                         </div>
                       </>
                     )}
                     {reportType === "alerts" && (
                       <>
                         <div className="col-span-2">
-                          <span className="text-slate-500 dark:text-slate-400">Device:</span>
-                          <span className="ml-1 text-slate-900 dark:text-white">{String(row.device || "-")}</span>
+                          <span className="text-muted-foreground">Device:</span>
+                          <span className="ml-1 text-foreground">{String(row.device || "-")}</span>
                         </div>
                         <div className="col-span-2">
-                          <span className="text-slate-500 dark:text-slate-400">Lokasi:</span>
-                          <span className="ml-1 text-slate-900 dark:text-white">{String(row.location || "-")}</span>
+                          <span className="text-muted-foreground">Lokasi:</span>
+                          <span className="ml-1 text-foreground">{String(row.location || "-")}</span>
                         </div>
                         <div className="col-span-2">
-                          <span className="text-slate-500 dark:text-slate-400">Pesan:</span>
-                          <p className="text-slate-900 dark:text-white text-xs mt-0.5 line-clamp-2">{String(row.message || "-")}</p>
+                          <span className="text-muted-foreground">Pesan:</span>
+                          <p className="text-foreground text-xs mt-0.5 line-clamp-2">{String(row.message || "-")}</p>
                         </div>
                       </>
                     )}
@@ -453,25 +452,25 @@ function ReportsContent() {
             {/* Desktop Table Layout */}
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm">
-                <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700">
+                <thead className="bg-muted border-b border-border">
                   <tr>
                     {getTableColumns().map((col) => (
                       <th
                         key={col}
-                        className="px-4 py-3 text-left text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider whitespace-nowrap"
+                        className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider whitespace-nowrap"
                       >
                         {formatColumnHeader(col)}
                       </th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                <tbody className="divide-y divide-border">
                   {displayData.map((row: Record<string, unknown>, idx: number) => (
-                    <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
+                    <tr key={idx} className="hover:bg-muted/50 transition-colors">
                       {getTableColumns().map((col) => (
                         <td
                           key={col}
-                          className="px-4 py-3 text-sm text-slate-700 dark:text-slate-300 max-w-[150px] sm:max-w-none truncate"
+                          className="px-4 py-3 text-sm text-foreground max-w-[150px] sm:max-w-none truncate"
                           title={String(row[col] || "")}
                         >
                           {col === "acknowledged" ? (
@@ -499,25 +498,25 @@ function ReportsContent() {
       {/* Pagination */}
       {summary && summary.totalRecords > 50 && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-xs text-slate-500 dark:text-slate-400">
+          <p className="text-xs text-muted-foreground">
             Menampilkan {(currentPage - 1) * 50 + 1} – {Math.min(currentPage * 50, summary.totalRecords)} dari {summary.totalRecords} record
           </p>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="flex items-center gap-1 px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              className="flex items-center gap-1 px-3 py-2 text-sm border border-border rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
               <span>Prev</span>
             </button>
-            <span className="text-xs text-slate-600 dark:text-slate-400 font-medium">
+            <span className="text-xs text-muted-foreground font-medium">
               Halaman {currentPage} / {Math.ceil(summary.totalRecords / 50)}
             </span>
             <button
               onClick={() => setCurrentPage(currentPage + 1)}
               disabled={currentPage * 50 >= summary.totalRecords}
-              className="flex items-center gap-1 px-3 py-2 text-sm border border-slate-200 dark:border-slate-600 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+              className="flex items-center gap-1 px-3 py-2 text-sm border border-border rounded-xl disabled:opacity-50 disabled:cursor-not-allowed hover:bg-muted transition-colors"
             >
               <span>Next</span>
               <ChevronRight className="w-4 h-4" />

@@ -11,7 +11,7 @@ import {
   Tooltip,
   ReferenceDot,
   ReferenceLine,
-} from "recharts";
+} from "@/components/charts/recharts";
 import { HourlyReading, DeviceDailyStat } from "@/types/dashboard";
 import { Loader2, TrendingUp, ArrowUp, ArrowDown } from "lucide-react";
 

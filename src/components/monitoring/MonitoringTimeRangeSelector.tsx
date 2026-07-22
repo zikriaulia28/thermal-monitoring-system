@@ -30,7 +30,7 @@ export default function MonitoringTimeRangeSelector({ value, onChange }: Props) 
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-sm hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
+        className="flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-lg shadow-sm hover:border-blue-300 hover:shadow-md transition-all duration-200 group"
       >
         <div className="p-1 bg-blue-50 dark:bg-blue-900/30 rounded-md group-hover:bg-blue-100 dark:group-hover:bg-blue-900/50 transition-colors">
           {RANGE_ICONS[value]}

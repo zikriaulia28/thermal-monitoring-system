@@ -1,17 +1,22 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Thermometer, Droplets, AlertTriangle, Eye, Clock, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Device } from "@/types/device";
 import { formatWIB } from "@/lib/formatWIB";
+import { useThresholds } from "@/hooks/useThresholds";
 import DeviceStatusBadge from "./DeviceStatusBadge";
-import DeviceDetailModal from "./DeviceDetailModal";
+
+const DeviceDetailModal = dynamic(() => import("./DeviceDetailModal"), { ssr: false });
 
 interface Props {
   device: Device;
+  variant?: "full" | "compact";
 }
 
-export default function DeviceCard({ device }: Props) {
+export default function DeviceCard({ device, variant = "full" }: Props) {
+  const compact = variant === "compact";
   const latest = device.readings.at(-1);
   const [open, setOpen] = useState(false);
 
@@ -19,6 +24,19 @@ export default function DeviceCard({ device }: Props) {
   const humCritical = latest && (latest.humidity > 70 || latest.humidity < 30);
   const isOffline = device.status === "offline";
   const isAlert = isOffline || tempCritical || humCritical;
+
+  const { tempMin, tempMax, humMin, humMax } = useThresholds();
+  // Margin ke batas terdekat (early warning)
+  const marginTemp =
+    latest != null
+      ? Math.min(Math.abs(latest.temperature - tempMin), Math.abs(latest.temperature - tempMax))
+      : Infinity;
+  const marginHum =
+    latest != null
+      ? Math.min(Math.abs(latest.humidity - humMin), Math.abs(latest.humidity - humMax))
+      : Infinity;
+  const nearBreach =
+    !isAlert && (marginTemp < 2 || marginHum < 5);
 
   // Calculate temperature trend (last 3 readings)
   const readings = device.readings.slice(-5);
@@ -30,18 +48,13 @@ export default function DeviceCard({ device }: Props) {
 
   return (
     <div
-      className={`relative group rounded-xl border bg-white p-4 sm:p-5 shadow-sm 
+      className={`relative group rounded-xl border bg-card p-4 sm:p-5 shadow-sm 
                   transition-all duration-200 hover:shadow-lg active:scale-[0.99]
-                  dark:bg-slate-800 dark:border-slate-700
-                  ${
-                    isAlert
-                      ? "border-red-200 dark:border-red-800 bg-red-50/30 dark:bg-red-950/10"
-                      : ""
-                  }`}
+                  ${isAlert ? "border-destructive/30 bg-destructive/5" : ""}`}
     >
       {/* ── Alert Stripe ── */}
       {isAlert && (
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 to-rose-500 rounded-t-xl" />
+        <div className="absolute left-0 top-2 bottom-2 w-1 rounded-r-full bg-[var(--cpems-offline)]" />
       )}
 
       {/* ── Header: Name + Status ── */}
@@ -52,26 +65,36 @@ export default function DeviceCard({ device }: Props) {
             className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-bold shrink-0 shadow-sm
               ${
                 isOffline
-                  ? "bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400"
-                  : "bg-gradient-to-br from-blue-500 to-indigo-600 text-white"
+                  ? "bg-[var(--cpems-offline)]/10 text-[var(--cpems-offline)]"
+                  : "bg-[var(--primary)] text-white"
               }`}
           >
             {device.name.charAt(0).toUpperCase()}
           </div>
           <div className="min-w-0">
-            <h3 className="font-semibold truncate text-slate-900 dark:text-white text-sm sm:text-base">
+            <h3 className="font-semibold truncate text-foreground text-sm sm:text-base">
               {device.name}
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-500 truncate">
+            <p className="text-xs text-muted-foreground truncate">
               {device.id} • 📍 {device.location}
             </p>
           </div>
         </div>
         <DeviceStatusBadge status={device.status} />
+        {compact && (isAlert || nearBreach) && (
+          <span
+            className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+              isAlert
+                ? "bg-[var(--cpems-offline)]"
+                : "bg-amber-500"
+            }`}
+            title={isAlert ? "Alert" : "Nyaris breach"}
+          />
+        )}
       </div>
 
-      {/* ── Alert Warning ── */}
-      {isAlert && (
+      {/* ── Alert Warning / Near Breach (full only) ── */}
+      {!compact && isAlert && (
         <div className="flex items-center gap-2 px-3 py-2 bg-red-100 dark:bg-red-900/20 rounded-lg mb-3">
           <AlertTriangle className="w-3.5 h-3.5 text-red-600 dark:text-red-400 shrink-0" />
           <span className="text-xs font-medium text-red-700 dark:text-red-400">
@@ -86,6 +109,17 @@ export default function DeviceCard({ device }: Props) {
         </div>
       )}
 
+      {!compact && nearBreach && (
+        <div className="flex items-center gap-2 px-3 py-2 bg-amber-100 dark:bg-amber-900/20 rounded-lg mb-3">
+          <AlertTriangle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+          <span className="text-xs font-medium text-amber-700 dark:text-amber-400">
+            ⚠ Nyaris breach
+            {marginTemp < 2 && ` (${marginTemp.toFixed(1)}°C ke batas)`}
+            {marginHum < 5 && ` (${marginHum.toFixed(0)}% ke batas)`}
+          </span>
+        </div>
+      )}
+
       {/* ── Readings with Progress Bars ── */}
       <div className="space-y-3 mb-3">
         {/* Temperature */}
@@ -95,15 +129,15 @@ export default function DeviceCard({ device }: Props) {
               <Thermometer
                 className={`h-4 w-4 ${tempCritical ? "text-red-600" : "text-red-500"} shrink-0`}
               />
-              <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Temp</span>
+              <span className="text-xs font-medium text-muted-foreground">Temp</span>
             </div>
             <div className="flex items-center gap-1.5">
               {getTrendIcon(tempTrend)}
               <span
-                className={`font-semibold text-sm ${
+                className={`font-data font-semibold text-sm ${
                   tempCritical
                     ? "text-red-700 dark:text-red-400"
-                    : "text-slate-900 dark:text-white"
+                    : "text-foreground"
                 }`}
               >
                 {latest ? `${latest.temperature}°C` : "--"}
@@ -111,7 +145,8 @@ export default function DeviceCard({ device }: Props) {
             </div>
           </div>
           {/* Progress bar */}
-          <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+          {!compact && (
+          <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
                 tempCritical
@@ -125,8 +160,11 @@ export default function DeviceCard({ device }: Props) {
               }}
             />
           </div>
+          )}
           {/* Mini sparkline */}
+          {!compact && (
           <MiniSparkline data={sparkData.map((r) => r.temperature)} color={tempCritical ? "#ef4444" : "#3b82f6"} />
+          )}
         </div>
 
         {/* Humidity */}
@@ -136,15 +174,15 @@ export default function DeviceCard({ device }: Props) {
               <Droplets
                 className={`h-4 w-4 ${humCritical ? "text-yellow-600" : "text-blue-500"} shrink-0`}
               />
-              <span className="text-xs font-medium text-slate-600 dark:text-slate-400">Humidity</span>
+              <span className="text-xs font-medium text-muted-foreground">Humidity</span>
             </div>
             <div className="flex items-center gap-1.5">
               {getTrendIcon(humTrend)}
               <span
-                className={`font-semibold text-sm ${
+                className={`font-data font-semibold text-sm ${
                   humCritical
                     ? "text-yellow-700 dark:text-yellow-400"
-                    : "text-slate-900 dark:text-white"
+                    : "text-foreground"
                 }`}
               >
                 {latest ? `${latest.humidity}%` : "--"}
@@ -152,7 +190,8 @@ export default function DeviceCard({ device }: Props) {
             </div>
           </div>
           {/* Progress bar */}
-          <div className="w-full h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+          {!compact && (
+          <div className="w-full h-1.5 rounded-full bg-muted overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-500 ${
                 humCritical
@@ -166,18 +205,24 @@ export default function DeviceCard({ device }: Props) {
               }}
             />
           </div>
+          )}
           {/* Mini sparkline */}
+          {!compact && (
           <MiniSparkline data={sparkData.map((r) => r.humidity)} color={humCritical ? "#eab308" : "#3b82f6"} />
+          )}
         </div>
       </div>
 
+      {/* ── Last Seen + Detail (full only) ── */}
+      {!compact && (
+        <>
       {/* ── Last Seen ── */}
       <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-700 pt-3 mb-3">
         <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-500">
           <Clock className="w-3 h-3" />
           <span>Last seen</span>
         </div>
-        <span className="text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
+        <span className="font-data text-xs sm:text-sm font-medium text-slate-700 dark:text-slate-300">
           {device.lastSeen ? formatWIB(device.lastSeen, "medium") : "-"}
         </span>
       </div>
@@ -186,16 +231,16 @@ export default function DeviceCard({ device }: Props) {
       <button
         onClick={() => setOpen(true)}
         className="w-full inline-flex items-center justify-center gap-2 rounded-lg
-                 bg-gradient-to-r from-blue-500 to-blue-600
+                 bg-[var(--primary)]
                  py-2.5 text-sm font-medium text-white shadow-sm
                  transition-all duration-200
-                 hover:from-blue-600 hover:to-blue-700 hover:shadow-md
+                 hover:brightness-110
                  active:scale-[0.98]
-                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] focus:ring-offset-2
                  dark:focus:ring-offset-slate-800"
       >
         <Eye className="w-4 h-4" />
-        View Detail
+        Lihat Detail
       </button>
 
       {/* ── Modal ── */}
@@ -204,6 +249,8 @@ export default function DeviceCard({ device }: Props) {
         open={open}
         onClose={() => setOpen(false)}
       />
+        </>
+      )}
     </div>
   );
 }

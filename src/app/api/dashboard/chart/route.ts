@@ -1,8 +1,9 @@
-import { prisma } from "@/lib/prisma";
+import { prisma, getCachedSettings } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { getOfflineThresholdMs } from "@/lib/deviceStatus";
 import { getDateRangeFromFilter, TimeRange, AGGREGATION_CONFIG } from "@/types/filter";
+import { Prisma } from "@prisma/client";
 
 export const dynamic = "force-dynamic";
 
@@ -29,35 +30,35 @@ export async function GET(request: Request) {
     const agg = AGGREGATION_CONFIG[rangeParam] || AGGREGATION_CONFIG.realtime;
     const intervalMinutes = agg.intervalMinutes;
 
-    const settings = await prisma.settings.findFirst();
+    const settings = await getCachedSettings();
     const intervalSeconds = settings?.monitoringIntervalSeconds;
 
     // ── DB-level aggregation: Postgres date_trunc buckets ──
-    const rows = await prisma.$queryRawUnsafe<Array<{
+    const rows = await prisma.$queryRaw<Array<{
       device_id: string;
       location: string;
       last_seen: Date | null;
       bucket: Date;
       avg_t: number;
       avg_h: number;
-    }>>(`
+    }>>(Prisma.sql`
       SELECT
         d."deviceId" AS device_id,
         d."location",
         d."lastSeen" AS last_seen,
         date_trunc('minute', sl."createdAt")
-          - (EXTRACT(MINUTE FROM sl."createdAt")::INT % $3) * INTERVAL '1 minute' AS bucket,
+          - (EXTRACT(MINUTE FROM sl."createdAt")::INT % ${intervalMinutes}) * INTERVAL '1 minute' AS bucket,
         AVG(sl."temperature")::FLOAT AS avg_t,
         AVG(sl."humidity")::FLOAT AS avg_h
       FROM "Device" d
       LEFT JOIN "SensorLog" sl
         ON sl."deviceId" = d."deviceId"
-        AND sl."createdAt" >= $1::TIMESTAMP
-        AND sl."createdAt" <= $2::TIMESTAMP
-      WHERE ($4::TEXT IS NULL OR d."deviceId" = $4)
+        AND sl."createdAt" >= ${from}::TIMESTAMP
+        AND sl."createdAt" <= ${to}::TIMESTAMP
+      WHERE (${deviceIdParam || null}::TEXT IS NULL OR d."deviceId" = ${deviceIdParam || null})
       GROUP BY d."deviceId", d."location", d."lastSeen", bucket
       ORDER BY d."deviceId", bucket
-    `, from, to, intervalMinutes, deviceIdParam || null);
+    `);
 
     // ── Group rows into device objects ──
     const deviceMap = new Map<string, {

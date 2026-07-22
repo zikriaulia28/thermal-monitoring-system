@@ -6,13 +6,6 @@ export interface MonitoringTimeRangeOption {
   hours: number;
 }
 
-export interface MonitoringChartData {
-  time: string;
-  PDB?: number | null;
-  UPS?: number | null;
-  BATTERY?: number | null;
-}
-
 export const MONITORING_TIME_RANGE_OPTIONS: MonitoringTimeRangeOption[] = [
   {
     value: "1h",

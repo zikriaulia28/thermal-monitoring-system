@@ -1,5 +1,3 @@
-const PREFIX = `[${new Date().toISOString()}]`;
-
 function fmt(ctx: string, msg: unknown): string {
   const ts = new Date().toISOString();
   const m =
