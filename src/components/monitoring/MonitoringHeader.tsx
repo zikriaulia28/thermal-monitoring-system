@@ -1,7 +1,6 @@
 "use client";
 
 import { Device } from "@/types/device";
-import { MonitoringTimeRange } from "@/types/monitoring";
 import {
   Server,
   Wifi,
@@ -12,14 +11,11 @@ import {
   AlertTriangle,
   Activity,
 } from "lucide-react";
-import MonitoringTimeRangeSelector from "./MonitoringTimeRangeSelector";
 import { Button } from "@/components/ui/button";
 
 interface Props {
   devices: Device[];
   isLoading?: boolean;
-  timeRange: MonitoringTimeRange;
-  onTimeRangeChange: (range: MonitoringTimeRange) => void;
   onRefresh: () => void;
 }
 
@@ -34,8 +30,6 @@ const COLOR_MAP: Record<string, string> = {
 export default function MonitoringHeader({
   devices,
   isLoading,
-  timeRange,
-  onTimeRangeChange,
   onRefresh,
 }: Props) {
   const online = devices.filter((d) => d.status === "online").length;
@@ -138,7 +132,6 @@ export default function MonitoringHeader({
         </div>
 
         <div className="flex items-center gap-2">
-          <MonitoringTimeRangeSelector value={timeRange} onChange={onTimeRangeChange} />
           <Button
             variant="outline"
             size="icon"

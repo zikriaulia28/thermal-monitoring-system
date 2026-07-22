@@ -12,16 +12,20 @@ import {
   Legend,
   ReferenceLine,
   ReferenceArea,
-} from "recharts";
+} from "@/components/charts/recharts";
 
 import { Thermometer, Droplets, AlertCircle } from "lucide-react";
 import { useThresholds } from "@/hooks/useThresholds";
 import { formatWIB } from "@/lib/formatWIB";
+import MonitoringTimeRangeSelector from "@/components/monitoring/MonitoringTimeRangeSelector";
+import { MonitoringTimeRange } from "@/types/monitoring";
 
 interface Props {
   temperatureData: Record<string, number | string | null>[];
   humidityData: Record<string, number | string | null>[];
   isLoading?: boolean;
+  timeRange: MonitoringTimeRange;
+  onTimeRangeChange: (range: MonitoringTimeRange) => void;
 }
 
 const TEMP_COLORS: Record<string, string> = {
@@ -40,6 +44,8 @@ export default function EnhancedMonitoringChart({
   temperatureData,
   humidityData,
   isLoading,
+  timeRange,
+  onTimeRangeChange,
 }: Props) {
   const [activeTab, setActiveTab] = useState<"temperature" | "humidity">("temperature");
   const { tempMin, tempMax, tempWarning, humMin, humMax } = useThresholds();
@@ -107,6 +113,7 @@ export default function EnhancedMonitoringChart({
 
         {/* Tabs */}
         <div className="flex items-center gap-1 p-1 bg-muted rounded-lg w-fit">
+          <MonitoringTimeRangeSelector value={timeRange} onChange={onTimeRangeChange} />
           <button
             onClick={() => setActiveTab("temperature")}
             className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-all ${

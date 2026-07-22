@@ -32,6 +32,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@next/bundle-analyzer": "^16.2.11",
     "@tailwindcss/postcss": "^4",
     "@types/lodash.debounce": "^4.0.9",
     "@types/node": "^20",

@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useSyncExternalStore } from "react";
+import { subscribeStatus, getStatus, getServerStatus, refreshStatus } from "@/lib/statusStore";
 
 const MUTE_KEY = "cpems-alarm-muted";
-const POLL_MS = 60000; // cek critical count tiap 60 detik
 const BEEP_EVERY_MS = 4000; // ulangi beep tiap 4 detik selama critical aktif
 
 // ── localStorage store (SSR-safe via useSyncExternalStore) ──
@@ -24,7 +24,7 @@ function getMuted() {
  */
 export function useAlarmSound() {
   const muted = useSyncExternalStore(subscribe, getMuted, () => false);
-  const [criticalCount, setCriticalCount] = useState(0);
+  const criticalCount = useSyncExternalStore(subscribeStatus, getStatus, getServerStatus).critical;
 
   const ctxRef = useRef<AudioContext | null>(null);
   const beepTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -75,29 +75,6 @@ export function useAlarmSound() {
     };
   }, [ensureCtx]);
 
-  // ── Poll critical count ──
-  useEffect(() => {
-    let cancelled = false;
-    const fetchCritical = async () => {
-      try {
-        const res = await fetch("/api/dashboard/alerts?summary=true");
-        if (!res.ok) return;
-        const { critical } = await res.json();
-        if (!cancelled) setCriticalCount(typeof critical === "number" ? critical : 0);
-      } catch {
-        /* diam — jangan ganggu UI kalau poll gagal */
-      }
-    };
-    fetchCritical();
-    const interval = setInterval(() => {
-      if (document.visibilityState === "visible") fetchCritical();
-    }, POLL_MS);
-    return () => {
-      cancelled = true;
-      clearInterval(interval);
-    };
-  }, []);
-
   // ── Loop beep selama critical > 0 dan tidak muted ──
   useEffect(() => {
     const shouldAlarm = criticalCount > 0 && !muted;
@@ -115,6 +92,11 @@ export function useAlarmSound() {
     };
   }, [criticalCount, muted, beep]);
 
+  // ── Re-fetch critical count on demand (e.g. after acknowledge) ──
+  const refreshCritical = useCallback(() => {
+    refreshStatus();
+  }, []);
+
   const toggleMute = useCallback(() => {
     ensureCtx(); // klik toggle sekaligus unlock audio
     const next = !getMuted();
@@ -122,5 +104,5 @@ export function useAlarmSound() {
     window.dispatchEvent(new Event("storage"));
   }, [ensureCtx]);
 
-  return { criticalCount, muted, toggleMute, hasCritical: criticalCount > 0 };
+  return { criticalCount, muted, toggleMute, hasCritical: criticalCount > 0, refreshCritical };
 }

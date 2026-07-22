@@ -1,11 +1,16 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { usePageTitle } from "@/hooks/usePageTitle";
 
 import MonitoringHeader from "@/components/monitoring/MonitoringHeader";
-import EnhancedMonitoringChart from "@/components/monitoring/EnhancedMonitoringChart";
 import DeviceCard from "@/components/devices/DeviceCard";
+
+const EnhancedMonitoringChart = dynamic(
+  () => import("@/components/monitoring/EnhancedMonitoringChart"),
+  { ssr: false, loading: () => <div className="h-[420px] rounded-xl border border-border bg-card animate-pulse" /> },
+);
 
 import { Device } from "@/types/device";
 import { MonitoringTimeRange } from "@/types/monitoring";
@@ -82,8 +87,6 @@ export default function MonitoringPage() {
       <MonitoringHeader 
         devices={devices} 
         isLoading={isLoading}
-        timeRange={timeRange}
-        onTimeRangeChange={handleTimeRangeChange}
         onRefresh={handleManualRefresh}
       />
 
@@ -91,6 +94,8 @@ export default function MonitoringPage() {
         temperatureData={temperatureData}
         humidityData={humidityData}
         isLoading={isLoading}
+        timeRange={timeRange}
+        onTimeRangeChange={handleTimeRangeChange}
       />
 
       {!isLoading && (

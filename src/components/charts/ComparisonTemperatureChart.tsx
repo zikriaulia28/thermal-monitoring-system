@@ -11,7 +11,7 @@ import {
   YAxis,
   ReferenceLine,
   ReferenceArea,
-} from "recharts";
+} from "@/components/charts/recharts";
 import { useThresholds } from "@/hooks/useThresholds";
 
 interface Props {

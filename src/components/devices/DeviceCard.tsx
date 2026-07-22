@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
+import dynamic from "next/dynamic";
 import { Thermometer, Droplets, AlertTriangle, Eye, Clock, TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { Device } from "@/types/device";
 import { formatWIB } from "@/lib/formatWIB";
 import { useThresholds } from "@/hooks/useThresholds";
 import DeviceStatusBadge from "./DeviceStatusBadge";
-import DeviceDetailModal from "./DeviceDetailModal";
+
+const DeviceDetailModal = dynamic(() => import("./DeviceDetailModal"), { ssr: false });
 
 interface Props {
   device: Device;

@@ -11,7 +11,7 @@ import {
   Tooltip,
   Legend,
   ReferenceLine,
-} from "recharts";
+} from "@/components/charts/recharts";
 import { Thermometer, Droplets } from "lucide-react";
 import { Device } from "@/types/device";
 import { formatWIB } from "@/lib/formatWIB";
