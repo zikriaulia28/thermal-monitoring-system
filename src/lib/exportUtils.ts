@@ -1,13 +1,3 @@
-import Papa from "papaparse";
-import { jsPDF } from "jspdf";
-
-import 'jspdf';
-declare module 'jspdf' {
-  interface jsPDF {
-    autoTable?: (options: Record<string, unknown>) => jsPDF;
-  }
-}
-
 export interface ReportRow {
   [key: string]: string | number | boolean;
 }
@@ -43,11 +33,11 @@ function formatPeriod(filename: string): string {
 /**
  * Export data to CSV file with custom column labels
  */
-export function exportToCSV(
+export async function exportToCSV(
   data: ReportRow[],
   filename: string,
   columnLabels?: string[]
-): void {
+): Promise<void> {
   if (!data || data.length === 0) {
     throw new Error("No data to export");
   }
@@ -66,6 +56,7 @@ export function exportToCSV(
     });
   }
 
+  const Papa = await import("papaparse");
   const csv = Papa.unparse(exportData);
   const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
@@ -81,16 +72,18 @@ export function exportToCSV(
 /**
  * Export data to PDF file with custom column labels
  */
-export function exportToPDF(
+export async function exportToPDF(
   data: ReportRow[],
   filename: string,
   columns: string[],
   columnLabels?: string[]
-): void {
+): Promise<void> {
   if (!data || data.length === 0) {
     throw new Error("No data to export");
   }
 
+  const { jsPDF } = await import("jspdf");
+  await import("jspdf-autotable");
   const doc = new jsPDF({
     orientation: columns.length > 5 ? "landscape" : "portrait",
     unit: "mm",

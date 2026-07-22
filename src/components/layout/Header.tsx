@@ -2,8 +2,9 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Menu, ChevronRight, Calendar, Clock, Bell, RefreshCw, Wifi, WifiOff, Shield } from "lucide-react";
+import { Menu, ChevronRight, Calendar, Clock, Bell, RefreshCw, Wifi, WifiOff, Shield, Volume2, VolumeX } from "lucide-react";
 import { useSystemStatus } from "@/hooks/useSystemStatus";
+import { useAlarmSound } from "@/hooks/useAlarmSound";
 import { checkAdminAccess } from "@/lib/adminAccess";
 
 interface Props {
@@ -57,6 +58,7 @@ export default function Header({ onMenu }: Props) {
     () => false, // server snapshot
   );
   const { status } = useSystemStatus();
+  const { muted, toggleMute, hasCritical } = useAlarmSound();
 
   useEffect(() => {
     const updateTime = () => {
@@ -191,6 +193,27 @@ export default function Header({ onMenu }: Props) {
               size={18}
               className={`text-slate-600 dark:text-slate-400 ${isRefreshing ? "animate-spin" : ""}`}
             />
+          </button>
+
+          {/* Alarm Sound Toggle */}
+          <button
+            onClick={toggleMute}
+            className={`relative p-2 rounded-lg transition-all active:scale-95 ${
+              hasCritical && !muted
+                ? "bg-red-100 dark:bg-red-900/30 hover:bg-red-200 dark:hover:bg-red-900/50"
+                : "hover:bg-slate-100 dark:hover:bg-slate-800"
+            }`}
+            aria-label={muted ? "Nyalakan alarm suara" : "Matikan alarm suara"}
+            title={muted ? "Alarm: OFF (klik untuk nyalakan)" : "Alarm: ON (klik untuk matikan)"}
+          >
+            {muted ? (
+              <VolumeX size={18} className="text-slate-500 dark:text-slate-400" />
+            ) : (
+              <Volume2
+                size={18}
+                className={`${hasCritical ? "text-red-600 dark:text-red-400 animate-pulse" : "text-slate-600 dark:text-slate-400"}`}
+              />
+            )}
           </button>
 
           {/* Notification Bell */}

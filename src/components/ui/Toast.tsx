@@ -71,7 +71,7 @@ export function Toast({ type, message, onClose, duration = 3000 }: ToastProps) {
       {onClose && (
         <button
           onClick={onClose}
-          className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+          className="text-muted-foreground hover:text-foreground transition-colors"
         >
           <X className="w-4 h-4" />
         </button>

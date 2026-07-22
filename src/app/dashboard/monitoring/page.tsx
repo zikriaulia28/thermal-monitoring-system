@@ -1,10 +1,16 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import dynamic from "next/dynamic";
+import { usePageTitle } from "@/hooks/usePageTitle";
 
 import MonitoringHeader from "@/components/monitoring/MonitoringHeader";
-import EnhancedMonitoringChart from "@/components/monitoring/EnhancedMonitoringChart";
-import MonitoringGrid from "@/components/monitoring/MonitoringGrid";
+import DeviceCard from "@/components/devices/DeviceCard";
+
+const EnhancedMonitoringChart = dynamic(
+  () => import("@/components/monitoring/EnhancedMonitoringChart"),
+  { ssr: false, loading: () => <div className="h-[420px] rounded-xl border border-border bg-card animate-pulse" /> },
+);
 
 import { Device } from "@/types/device";
 import { MonitoringTimeRange } from "@/types/monitoring";
@@ -12,6 +18,7 @@ import { getMonitoringData } from "@/services/monitoring.service";
 import { transformMonitoringData } from "@/lib/chartUtils";
 
 export default function MonitoringPage() {
+  usePageTitle("Monitoring");
   const [devices, setDevices] = useState<Device[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [timeRange, setTimeRange] = useState<MonitoringTimeRange>("1h");
@@ -53,7 +60,7 @@ export default function MonitoringPage() {
 
     const interval = setInterval(() => {
       if (document.visibilityState === 'visible') load();
-    }, 60000);
+    }, 120000);
 
     return () => {
       cancelled = true;
@@ -80,8 +87,6 @@ export default function MonitoringPage() {
       <MonitoringHeader 
         devices={devices} 
         isLoading={isLoading}
-        timeRange={timeRange}
-        onTimeRangeChange={handleTimeRangeChange}
         onRefresh={handleManualRefresh}
       />
 
@@ -89,9 +94,17 @@ export default function MonitoringPage() {
         temperatureData={temperatureData}
         humidityData={humidityData}
         isLoading={isLoading}
+        timeRange={timeRange}
+        onTimeRangeChange={handleTimeRangeChange}
       />
 
-      {!isLoading && <MonitoringGrid devices={devices} />}
+      {!isLoading && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
+          {devices.map((device) => (
+            <DeviceCard key={device.id} device={device} variant="compact" />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

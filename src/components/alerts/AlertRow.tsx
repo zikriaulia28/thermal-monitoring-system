@@ -1,5 +1,6 @@
 import { Alert } from "@/types/alert";
-import { formatWIB } from "@/lib/formatWIB";
+import { formatWIB, formatDurationSince } from "@/lib/formatWIB";
+import { useMounted } from "@/hooks/useMounted";
 
 interface Props {
   alert: Alert;
@@ -9,6 +10,7 @@ interface Props {
 
 export default function AlertRow({ alert, onAcknowledge, isLoading }: Props) {
   const isCritical = alert.severity === "CRITICAL";
+  const mounted = useMounted();
   const isAcknowledged = alert.acknowledged;
 
   const severityConfig = isCritical
@@ -98,6 +100,14 @@ export default function AlertRow({ alert, onAcknowledge, isLoading }: Props) {
         <div className="flex items-center gap-2">
           <span className="text-sm">{severityConfig.icon}</span>
           <span>{alert.message}</span>
+        </div>
+      </td>
+
+      {/* Duration */}
+      <td className="whitespace-nowrap p-4">
+        <div className="flex items-center gap-1.5 text-sm font-data text-slate-600 dark:text-slate-400">
+          <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+          {mounted ? formatDurationSince(alert.createdAt) : ""}
         </div>
       </td>
 

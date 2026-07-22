@@ -6,7 +6,7 @@ export function useThresholds() {
 
   const tempMin = settings?.thresholdTempMin ?? DEFAULT_SETTINGS.thresholdTempMin;
   const tempMax = settings?.thresholdTempMax ?? DEFAULT_SETTINGS.thresholdTempMax;
-  const tempWarning = tempMin + (tempMax - tempMin) * 0.7; // 70% dari range
+  const tempWarning = tempMax - 2; // 2°C sebelum breach max
 
   const humMin = settings?.thresholdHumidityMin ?? DEFAULT_SETTINGS.thresholdHumidityMin;
   const humMax = settings?.thresholdHumidityMax ?? DEFAULT_SETTINGS.thresholdHumidityMax;

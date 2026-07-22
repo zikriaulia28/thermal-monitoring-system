@@ -9,7 +9,7 @@ import {
   Legend,
   XAxis,
   YAxis,
-} from "recharts";
+} from "@/components/charts/recharts";
 
 import { formatWIB } from "@/lib/formatWIB";
 

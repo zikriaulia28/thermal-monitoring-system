@@ -1,9 +1,9 @@
-import { prisma } from "@/lib/prisma";
+import { prisma, getCachedSettings } from "@/lib/prisma";
 import { NextResponse } from "next/server";
 import { getOfflineThresholdMs } from "@/lib/deviceStatus";
 
 export async function GET() {
-  const settings = await prisma.settings.findFirst();
+  const settings = await getCachedSettings();
   const intervalSeconds = settings?.monitoringIntervalSeconds;
   const thresholdMs = getOfflineThresholdMs(intervalSeconds);
 

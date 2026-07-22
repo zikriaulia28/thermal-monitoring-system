@@ -6,6 +6,16 @@ import { Prisma } from "@prisma/client";
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
+
+    // ── Lightweight summary mode (for dashboard) ──
+    if (searchParams.get("summary") === "true") {
+      const [active, critical] = await Promise.all([
+        prisma.alert.count({ where: { acknowledged: false } }),
+        prisma.alert.count({ where: { acknowledged: false, severity: "CRITICAL" } }),
+      ]);
+      return NextResponse.json({ active, critical });
+    }
+
     const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "10")));
     const skip = (page - 1) * limit;
@@ -48,7 +58,7 @@ export async function GET(req: NextRequest) {
       ]),
       prisma.alert.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        orderBy: [{ acknowledged: "asc" }, { createdAt: "desc" }],
         skip,
         take: limit,
       }),
@@ -86,21 +96,26 @@ export async function GET(req: NextRequest) {
 
 export async function PATCH(req: Request) {
   try {
-    const { id } = await req.json();
+    const body = await req.json();
+    const ids: string[] = body.ids?.length
+      ? body.ids
+      : body.id
+        ? [body.id]
+        : [];
 
-    if (!id) {
+    if (ids.length === 0) {
       return NextResponse.json(
         { success: false, message: "Alert ID is required" },
         { status: 400 },
       );
     }
 
-    await prisma.alert.update({
-      where: { id },
+    await prisma.alert.updateMany({
+      where: { id: { in: ids } },
       data: { acknowledged: true },
     });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, count: ids.length });
   } catch (error) {
     logger.error("ALERTS_PATCH", error);
     return NextResponse.json(

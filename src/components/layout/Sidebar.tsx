@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 import { useSystemStatus } from "@/hooks/useSystemStatus";
 
 import {
@@ -13,7 +12,6 @@ import {
   FileText,
   Settings,
   X,
-  ChevronRight,
   Zap,
   Wifi,
   WifiOff,
@@ -24,36 +22,22 @@ interface Props {
   onClose: () => void;
 }
 
-const menuGroups = [
-  {
-    label: "MAIN",
-    items: [
-      { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { name: "Devices", href: "/dashboard/devices", icon: Cpu },
-      { name: "Monitoring", href: "/dashboard/monitoring", icon: Activity },
-    ],
-  },
-  {
-    label: "MANAGEMENT",
-    items: [
-      { name: "Alerts", href: "/dashboard/alerts", icon: Bell, showBadge: true },
-      { name: "Reports", href: "/dashboard/reports", icon: FileText },
-    ],
-  },
-  {
-    label: "SYSTEM",
-    items: [{ name: "Settings", href: "/dashboard/settings", icon: Settings }],
-  },
+const navItems = [
+  { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { name: "Devices", href: "/dashboard/devices", icon: Cpu },
+  { name: "Monitoring", href: "/dashboard/monitoring", icon: Activity },
+  { name: "Alerts", href: "/dashboard/alerts", icon: Bell, showBadge: true },
+  { name: "Reports", href: "/dashboard/reports", icon: FileText },
+  { name: "Settings", href: "/dashboard/settings", icon: Settings },
 ];
 
 export default function Sidebar({ open, onClose }: Props) {
   const pathname = usePathname();
-  const [, setHoveredItem] = useState<string | null>(null);
   const { status } = useSystemStatus();
 
   return (
     <>
-      {/* Backdrop untuk mobile */}
+      {/* Backdrop — mobile only */}
       {open && (
         <div
           onClick={onClose}
@@ -62,203 +46,161 @@ export default function Sidebar({ open, onClose }: Props) {
         />
       )}
 
+      {/* ── Desktop: 64px icon-only / Mobile: full overlay ── */}
       <aside
         className={`
-          fixed left-0 top-0 z-50
-          h-screen
-          w-72
-          bg-slate-950
-          text-slate-300
-          transition-transform
-          duration-300 ease-out
+          fixed left-0 top-0 z-50 h-screen
           flex flex-col
-          border-r border-slate-800
+          bg-sidebar text-sidebar-foreground
+          border-r border-sidebar-border
+          transition-transform duration-300 ease-out
 
+          /* Mobile: w-72 overlay, closed by default */
+          w-72
           ${open ? "translate-x-0" : "-translate-x-full"}
 
-          lg:translate-x-0
+          /* Desktop: 64px always visible, icon-only */
+          lg:w-16 lg:translate-x-0
         `}
         role="navigation"
         aria-label="Main navigation"
       >
-        {/* Header dengan Logo */}
-        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-800">
-          <div className="flex items-center gap-3">
-            {/* Logo Icon */}
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/20">
+        {/* ── Logo ── */}
+        <div className="flex items-center justify-between px-4 py-4 border-b border-sidebar-border lg:justify-center lg:px-0">
+          <Link href="/dashboard" className="flex items-center gap-3 lg:gap-0" title="CPEMS — Coolman Power Environment Monitoring System">
+            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-[var(--primary)] shadow-sm shrink-0">
               <Zap className="w-5 h-5 text-white" fill="white" />
             </div>
-
-            {/* Brand Text */}
-            <div>
-              <h1 className="text-base font-bold text-white tracking-tight">
-                CPEMS
-              </h1>
-              <p className="text-[10px] text-slate-500 font-medium uppercase tracking-wider">
-                Coolman Power
-              </p>
+            <div className="lg:hidden">
+              <h1 className="text-base font-bold text-sidebar-foreground tracking-tight">CPEMS</h1>
+              <p className="text-[10px] text-sidebar-foreground/50 font-medium uppercase tracking-wider">Coolman Power</p>
             </div>
-          </div>
-
-          {/* Close Button - Mobile Only */}
+          </Link>
           <button
             onClick={onClose}
-            className="lg:hidden p-1.5 rounded-md hover:bg-slate-800 transition-colors active:scale-95"
+            className="lg:hidden p-1.5 rounded-md hover:bg-sidebar-accent transition-colors active:scale-95"
             aria-label="Close sidebar"
           >
-            <X size={18} className="text-slate-400" />
+            <X size={18} className="text-sidebar-foreground/50" />
           </button>
         </div>
 
-        {/* Navigation Menu */}
-        <nav className="flex-1 overflow-y-auto px-4 py-5 space-y-6">
-          {menuGroups.map((group) => (
-            <div key={group.label}>
-              {/* Group Label */}
-              <div className="px-3 mb-2">
-                <span className="text-[10px] font-semibold text-slate-600 uppercase tracking-wider">
-                  {group.label}
-                </span>
-              </div>
+        {/* ── Navigation ── */}
+        <nav className="flex-1 overflow-y-auto py-4 space-y-1 px-2 lg:px-0 lg:py-4">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const active = pathname === item.href;
+            const badgeCount = item.showBadge ? status.unacknowledgedAlerts : 0;
 
-              {/* Menu Items */}
-              <ul className="space-y-1">
-                {group.items.map((menu) => {
-                  const Icon = menu.icon;
-                  const active = pathname === menu.href;
-                  const badgeCount = menu.showBadge ? status.unacknowledgedAlerts : 0;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onClose}
+                className={`
+                  relative flex items-center gap-3 lg:justify-center
+                  rounded-lg px-3 py-2.5 lg:px-0 lg:py-2.5
+                  text-sm font-medium
+                  transition-all duration-200
+                  outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary)]
+                  active:scale-95
+                  group
+                  ${active
+                    ? "bg-[var(--primary)]/10 text-[var(--primary)]"
+                    : "text-sidebar-foreground/60 hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                  }
+                `}
+                aria-current={active ? "page" : undefined}
+                title={item.name}
+              >
+                {/* Active indicator */}
+                {active && (
+                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-[var(--primary)] rounded-r-full lg:left-auto lg:right-0 lg:h-6 lg:w-0.5" />
+                )}
 
-                  return (
-                    <li key={menu.href}>
-                      <Link
-                        href={menu.href}
-                        onClick={onClose}
-                        onMouseEnter={() => setHoveredItem(menu.href)}
-                        onMouseLeave={() => setHoveredItem(null)}
-                        className={`
-                          group relative flex items-center gap-3
-                          rounded-lg px-3 py-2.5
-                          text-sm font-medium
-                          transition-all duration-200
-                          outline-none focus-visible:ring-2 focus-visible:ring-blue-500
-                          active:scale-95
-                          
-                          ${
-                            active
-                              ? "bg-blue-500/10 text-blue-400"
-                              : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-200"
-                          }
-                        `}
-                        aria-current={active ? "page" : undefined}
-                      >
-                        {/* Active Indicator (Left Border) */}
-                        {active && (
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-blue-500 rounded-r-full" />
-                        )}
+                <Icon
+                  size={20}
+                  className={`shrink-0 transition-colors duration-200 ${
+                    active
+                      ? "text-[var(--primary)]"
+                      : "text-sidebar-foreground/40 group-hover:text-sidebar-foreground/70"
+                  }`}
+                />
 
-                        {/* Icon */}
-                        <Icon
-                          size={18}
-                          className={`
-                            transition-colors duration-200
-                            ${active ? "text-blue-400" : "text-slate-500 group-hover:text-slate-300"}
-                          `}
-                        />
+                {/* Label — hidden on desktop */}
+                <span className="flex-1 lg:hidden">{item.name}</span>
 
-                        {/* Label */}
-                        <span className="flex-1">{menu.name}</span>
+                {/* Badge — mobile only (desktop too small) */}
+                {item.showBadge && badgeCount > 0 && (
+                  <span className="lg:hidden inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-[10px] font-bold rounded-full transition-all duration-200 bg-[var(--cpems-offline)]/15 text-[var(--cpems-offline)]">
+                    {badgeCount > 9 ? "9+" : badgeCount}
+                  </span>
+                )}
 
-                        {/* Badge untuk Alerts */}
-                        {menu.showBadge && badgeCount > 0 && (
-                          <span
-                            className={`
-                              inline-flex items-center justify-center
-                              min-w-[20px] h-5 px-1.5
-                              text-[10px] font-bold rounded-full
-                              transition-all duration-200
-                              animate-pulse
-                              ${
-                                active
-                                  ? "bg-blue-500 text-white"
-                                  : "bg-red-500/20 text-red-400 group-hover:bg-red-500/30"
-                              }
-                            `}
-                          >
-                            {badgeCount > 9 ? "9+" : badgeCount}
-                          </span>
-                        )}
-
-                        {/* Chevron untuk active state */}
-                        {active && (
-                          <ChevronRight
-                            size={14}
-                            className="text-blue-400/50"
-                          />
-                        )}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          ))}
+                {/* Desktop dot indicator for alerts */}
+                {item.showBadge && badgeCount > 0 && (
+                  <span className="hidden lg:inline-block absolute top-1 right-1 w-2 h-2 rounded-full bg-[var(--cpems-offline)]" />
+                )}
+              </Link>
+            );
+          })}
         </nav>
 
-        {/* System Status */}
-        <div className="px-4 pb-4 space-y-3">
-          {/* Device Status */}
-          <div className="rounded-lg bg-slate-900/50 border border-slate-800 p-3">
+        {/* ── System Status — desktop: hidden, mobile: shown ── */}
+        <div className="px-4 pb-4 space-y-3 lg:hidden">
+          <div className="rounded-lg bg-sidebar-accent/50 border border-sidebar-border p-3">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-medium text-slate-300">
-                Device Status
-              </span>
-              {status.onlineDevices > 0 ? (
-                <Wifi size={14} className="text-green-500" />
-              ) : (
-                <WifiOff size={14} className="text-red-500" />
-              )}
+              <span className="text-xs font-medium text-sidebar-foreground">Status Perangkat</span>
+              <WifiIcon online={status.onlineDevices > 0} />
             </div>
-            
             <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2">
-                <div className="relative">
-                  <div className="w-2 h-2 rounded-full bg-green-500" />
-                  {status.onlineDevices > 0 && (
-                    <div className="absolute inset-0 w-2 h-2 rounded-full bg-green-500 animate-ping opacity-75" />
-                  )}
-                </div>
-                <span className="text-slate-400">Online</span>
-              </div>
-              <span className="font-bold text-slate-200">
-                {status.onlineDevices}
-              </span>
+              <OnlineDot count={status.onlineDevices} />
+              <span className="font-bold text-sidebar-foreground font-data">{status.onlineDevices}</span>
             </div>
-
             <div className="flex items-center justify-between text-xs mt-1.5">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-red-500" />
-                <span className="text-slate-400">Offline</span>
-              </div>
-              <span className="font-bold text-slate-200">
-                {status.offlineDevices}
-              </span>
+              <OfflineDot />
+              <span className="font-bold text-sidebar-foreground font-data">{status.offlineDevices}</span>
             </div>
-
-            <div className="mt-2 pt-2 border-t border-slate-800">
-              <div className="text-[10px] text-slate-500">
+            <div className="mt-2 pt-2 border-t border-sidebar-border">
+              <div className="text-[10px] text-sidebar-foreground/40">
                 Total: {status.totalDevices} device{status.totalDevices !== 1 ? "s" : ""}
               </div>
             </div>
           </div>
-
-          {/* Last Sync */}
           <div className="text-center">
-            <div className="text-[10px] text-slate-600">
-              Auto-refresh every 30s
-            </div>
+            <div className="text-[10px] text-sidebar-foreground/40">Auto-refresh setiap 30 detik</div>
           </div>
         </div>
       </aside>
     </>
+  );
+}
+
+function WifiIcon({ online }: { online: boolean }) {
+  return online
+    ? <Wifi size={14} className="text-[var(--cpems-online)]" />
+    : <WifiOff size={14} className="text-[var(--cpems-offline)]" />;
+}
+
+function OnlineDot({ count }: { count: number }) {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="relative">
+        <div className="w-2 h-2 rounded-full bg-[var(--cpems-online)]" />
+        {count > 0 && (
+          <div className="absolute inset-0 w-2 h-2 rounded-full bg-[var(--cpems-online)] animate-ping opacity-75" />
+        )}
+      </div>
+      <span className="text-sidebar-foreground/60">Online</span>
+    </div>
+  );
+}
+
+function OfflineDot() {
+  return (
+    <div className="flex items-center gap-2">
+      <div className="w-2 h-2 rounded-full bg-[var(--cpems-offline)]" />
+      <span className="text-sidebar-foreground/60">Offline</span>
+    </div>
   );
 }

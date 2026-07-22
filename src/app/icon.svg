@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <!-- Background rounded square like sidebar -->
+  <rect x="50" y="50" width="300" height="300" rx="60" fill="#2a6f97"/>
+  <!-- Shadow -->
+  <rect x="50" y="50" width="300" height="300" rx="60" fill="none" stroke="#1e4a6b" stroke-width="4"/>
+  <!-- Zap icon -->
+  <polygon points="230,60 120,220 190,220 160,340 290,170 215,170 250,60" fill="white"/>
+</svg>

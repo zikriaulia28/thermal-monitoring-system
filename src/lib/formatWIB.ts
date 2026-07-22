@@ -38,3 +38,23 @@ export function formatWIB(
       return `${hh}:${mm} WIB`;
   }
 }
+
+/**
+ * Format durasi sejak timestamp (umur alert) jadi relatif WIB.
+ * Contoh: "2j 15m", "45m", "3h 5m", "<1m".
+ */
+export function formatDurationSince(iso: string | Date | null | undefined): string {
+  if (!iso) return "-";
+  const d = typeof iso === "string" ? new Date(iso) : iso;
+  const diffMs = Date.now() - d.getTime();
+  if (diffMs < 0) return "-";
+
+  const totalMin = Math.floor(diffMs / 60000);
+  if (totalMin < 1) return "<1m";
+  const days = Math.floor(totalMin / 1440);
+  const h = Math.floor((totalMin % 1440) / 60);
+  const m = totalMin % 60;
+  if (days > 0) return `${days}h ${h}j ${m}m`;
+  if (h > 0) return `${h}j ${m}m`;
+  return `${m}m`;
+}

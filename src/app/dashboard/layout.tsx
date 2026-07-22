@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import Sidebar from "@/components/layout/Sidebar";
 import Header from "@/components/layout/Header";
+import BottomTabBar from "@/components/layout/BottomTabBar";
 
 export default function DashboardLayout({
   children,
@@ -13,21 +14,21 @@ export default function DashboardLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    // ✅ PERBAIKAN 1: Tambahkan dark mode background & cegah horizontal scroll
-    <div className="flex min-h-screen bg-slate-50 dark:bg-slate-950 overflow-x-hidden">
-      {/* Sidebar */}
+    <div className="flex min-h-screen bg-background overflow-x-hidden">
+      {/* Sidebar — desktop: 64px icon-only */}
       <Sidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
       {/* Main Content Wrapper */}
-      {/* ✅ PERBAIKAN 2: Ubah ml-64 menjadi ml-72 agar pas dengan Sidebar terbaru (w-72) */}
-      <div className="flex flex-1 flex-col lg:ml-72">
+      <div className="flex flex-1 flex-col lg:ml-16 pb-14 md:pb-0">
         {/* Header */}
         <Header onMenu={() => setSidebarOpen(true)} />
 
         {/* Page Content */}
-        {/* ✅ PERBAIKAN 3: Padding responsif untuk mobile, tablet, dan desktop */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8">{children}</main>
       </div>
+
+      {/* Bottom Tab Bar — mobile only */}
+      <BottomTabBar />
     </div>
   );
 }
