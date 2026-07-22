@@ -51,8 +51,10 @@ export function formatDurationSince(iso: string | Date | null | undefined): stri
 
   const totalMin = Math.floor(diffMs / 60000);
   if (totalMin < 1) return "<1m";
-  const h = Math.floor(totalMin / 60);
+  const days = Math.floor(totalMin / 1440);
+  const h = Math.floor((totalMin % 1440) / 60);
   const m = totalMin % 60;
+  if (days > 0) return `${days}h ${h}j ${m}m`;
   if (h > 0) return `${h}j ${m}m`;
   return `${m}m`;
 }

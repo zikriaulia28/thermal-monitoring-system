@@ -3,7 +3,8 @@
 import AlertRow from "./AlertRow";
 import { Alert } from "@/types/alert";
 import { formatWIB, formatDurationSince } from "@/lib/formatWIB";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { useMounted } from "@/hooks/useMounted";
+import { ChevronLeft, ChevronRight, CheckCheck, RefreshCw } from "lucide-react";
 
 interface PaginationProps {
   currentPage: number;
@@ -17,6 +18,9 @@ interface Props {
   alerts: Alert[];
   onAcknowledge: (id: string) => void;
   ackLoadingId?: string | null;
+  onAcknowledgeAll?: () => void;
+  ackAllLoading?: boolean;
+  hasUnacked?: boolean;
   pagination?: PaginationProps;
 }
 
@@ -24,10 +28,36 @@ export default function AlertTable({
   alerts,
   onAcknowledge,
   ackLoadingId,
+  onAcknowledgeAll,
+  ackAllLoading,
+  hasUnacked,
   pagination,
 }: Props) {
+  const mounted = useMounted();
   return (
     <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+      {/* ── BULK ACTIONS ────────────────────────────────── */}
+      {onAcknowledgeAll && (
+        <div className="flex items-center justify-end gap-2 px-4 py-3 border-b border-border">
+          <button
+            onClick={onAcknowledgeAll}
+            disabled={ackAllLoading || !hasUnacked}
+            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg
+                     bg-[var(--primary)] text-white text-sm font-medium shadow-sm
+                     hover:brightness-110 hover:shadow-md active:scale-[0.98]
+                     transition-all
+                     disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+          >
+            {ackAllLoading ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <CheckCheck className="w-4 h-4" />
+            )}
+            Acknowledge All
+          </button>
+        </div>
+      )}
+
       {/* ── EMPTY STATE ──────────────────────────────────── */}
       {alerts.length === 0 && (
         <div className="flex flex-col items-center justify-center py-16 px-4">
@@ -142,7 +172,7 @@ export default function AlertTable({
                     <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    {formatWIB(alert.createdAt, "medium")} · {formatDurationSince(alert.createdAt)}
+                    {formatWIB(alert.createdAt, "medium")} · {mounted ? formatDurationSince(alert.createdAt) : ""}
                   </div>
 
                   {/* Action */}

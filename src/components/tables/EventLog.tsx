@@ -3,6 +3,7 @@
 import { AlertTriangle, Info, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import { formatWIB, formatDurationSince } from "@/lib/formatWIB";
+import { useMounted } from "@/hooks/useMounted";
 
 type Severity = "CRITICAL" | "WARNING" | "INFO" | string;
 
@@ -30,6 +31,7 @@ const SEV_CONFIG: Record<string, { label: string; cls: string; Icon: typeof Info
 
 export default function EventLog({ alerts, isLoading = false }: EventLogProps) {
   const sev = (s: Severity) => SEV_CONFIG[s?.toUpperCase()] ?? SEV_CONFIG.INFO;
+  const mounted = useMounted();
 
   return (
     <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
@@ -80,7 +82,7 @@ export default function EventLog({ alerts, isLoading = false }: EventLogProps) {
                         {a.location}
                       </span>
                       <span className="shrink-0 text-[11px] text-muted-foreground font-data whitespace-nowrap">
-                        {formatWIB(a.createdAt, "medium")} · {formatDurationSince(a.createdAt)}
+                        {formatWIB(a.createdAt, "medium")} · {mounted ? formatDurationSince(a.createdAt) : ""}
                       </span>
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5 break-words">
